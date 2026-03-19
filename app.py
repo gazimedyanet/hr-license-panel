@@ -444,7 +444,8 @@ details.drop summary{list-style:none;cursor:pointer}
 details.drop summary::-webkit-details-marker{display:none}
 details.drop .dpanel{position:absolute;right:0;top:calc(100%+6px);
   background:var(--s2);border:1px solid var(--b2);border-radius:10px;
-  padding:14px;min-width:210px;z-index:100;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+  padding:14px;min-width:210px;z-index:1000;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+details.drop[open] .dpanel{display:block}
 .dpanel h4{font-size:11px;color:var(--t3);text-transform:uppercase;
   letter-spacing:.7px;margin-bottom:10px;font-weight:700}
 .dpanel select,.dpanel input{width:100%;background:rgba(255,255,255,.04);
@@ -473,6 +474,17 @@ details.drop .dpanel{position:absolute;right:0;top:calc(100%+6px);
 .log-action{font-weight:700;font-size:11px;padding:2px 8px;border-radius:5px;
   background:rgba(59,130,246,.1);color:#93c5fd;white-space:nowrap}
 .log-detail{color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  z-index:500;display:flex;align-items:center;justify-content:center}
+.modal-box{background:var(--s2);border:1px solid var(--b2);border-radius:14px;
+  padding:24px;width:340px;box-shadow:0 24px 48px rgba(0,0,0,.6)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-head h3{font-size:15px;font-weight:700}
+.modal-head button{background:transparent;border:none;color:var(--t2);
+  font-size:18px;cursor:pointer;line-height:1;padding:0 4px}
+.modal-head button:hover{color:var(--text)}
 
 /* TOAST */
 #toast{position:fixed;bottom:24px;right:24px;display:flex;align-items:center;gap:8px;
@@ -798,60 +810,98 @@ PANEL_HTML = """<!DOCTYPE html>
             <td>
               <div class="actions">
                 <!-- UZAT -->
-                <details class="drop">
-                  <summary><button type="button" class="btn btn-success btn-sm">Uzat</button></summary>
-                  <div class="dpanel">
-                    <h4>Süre Uzat</h4>
-                    <form method="POST" action="/extend/{{ lic.id }}">
-                      <select name="days">
-                        <option value="365">+ 1 Yıl</option>
-                        <option value="730">+ 2 Yıl</option>
-                        <option value="180">+ 6 Ay</option>
-                        <option value="90">+ 90 Gün</option>
-                        <option value="30">+ 30 Gün</option>
-                      </select>
-                      <button type="submit" class="btn btn-success" style="width:100%">Uzat →</button>
-                    </form>
-                  </div>
-                </details>
+                <button type="button" class="btn btn-success btn-sm"
+                  onclick="document.getElementById('m-uzat-'+{{ lic.id }}).style.display='flex'">Uzat</button>
                 <!-- DÜZENLE -->
-                <details class="drop">
-                  <summary><button type="button" class="btn btn-purple btn-sm">Düzenle</button></summary>
-                  <div class="dpanel" style="min-width:240px">
-                    <h4>Müşteri Bilgilerini Düzenle</h4>
-                    <form method="POST" action="/edit/{{ lic.id }}">
-                      <input name="customer_name" value="{{ lic.customer_name or '' }}" placeholder="Müşteri adı">
-                      <input name="customer_email" value="{{ lic.customer_email or '' }}" placeholder="E-posta">
-                      <input name="customer_phone" value="{{ lic.customer_phone or '' }}" placeholder="Telefon">
-                      <input name="notes" value="{{ lic.notes or '' }}" placeholder="Not">
-                      <button type="submit" class="btn btn-purple" style="width:100%">Kaydet →</button>
-                    </form>
-                  </div>
-                </details>
+                <button type="button" class="btn btn-purple btn-sm"
+                  onclick="document.getElementById('m-duzenle-'+{{ lic.id }}).style.display='flex'">Düzenle</button>
                 <!-- İPTAL / AKTİFLEŞTİR -->
                 {% if not lic.is_revoked %}
-                <details class="drop">
-                  <summary><button type="button" class="btn btn-warn btn-sm">İptal</button></summary>
-                  <div class="dpanel">
-                    <h4>Lisansı İptal Et</h4>
-                    <form method="POST" action="/revoke/{{ lic.id }}">
-                      <input name="reason" placeholder="İptal gerekçesi (opsiyonel)">
-                      <button type="submit" class="btn btn-danger" style="width:100%"
-                              onclick="return confirm('İptal edilecek. Devam?')">İptal Et →</button>
-                    </form>
-                  </div>
-                </details>
+                <button type="button" class="btn btn-warn btn-sm"
+                  onclick="document.getElementById('m-iptal-'+{{ lic.id }}).style.display='flex'">İptal</button>
                 {% else %}
-                <form method="POST" action="/restore/{{ lic.id }}">
+                <form method="POST" action="/restore/{{ lic.id }}" style="display:inline">
                   <button type="submit" class="btn btn-success btn-sm">Aktifleştir</button>
                 </form>
                 {% endif %}
                 <!-- SİL -->
-                <form method="POST" action="/delete/{{ lic.id }}"
-                      onsubmit="return confirm('Lisans kalıcı silinecek! Emin misiniz?')">
+                <form method="POST" action="/delete/{{ lic.id }}" style="display:inline"
+                      onsubmit="return confirm('Kalıcı silinecek! Emin misiniz?')">
                   <button type="submit" class="btn btn-danger btn-xs">✕</button>
                 </form>
               </div>
+            </td>
+            <!-- MODALLER -->
+            <td style="display:none">
+              <!-- UZAT MODAL -->
+              <div id="m-uzat-{{ lic.id }}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+                z-index:1000;align-items:center;justify-content:center">
+                <div style="background:#1c2a40;border:1px solid #2d4060;border-radius:14px;padding:28px;width:340px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+                    <b style="font-size:15px">Süre Uzat</b>
+                    <button onclick="document.getElementById('m-uzat-'+{{ lic.id }}).style.display='none'"
+                      style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer">✕</button>
+                  </div>
+                  <form method="POST" action="/extend/{{ lic.id }}">
+                    <label style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.6px">Süre</label>
+                    <select name="days" style="width:100%;background:#111827;border:1px solid #253347;border-radius:8px;
+                      padding:9px 12px;color:#e2e8f0;font-size:13px;margin:6px 0 14px;outline:none">
+                      <option value="365">+ 1 Yıl</option>
+                      <option value="730">+ 2 Yıl</option>
+                      <option value="180">+ 6 Ay</option>
+                      <option value="90">+ 90 Gün</option>
+                      <option value="30">+ 30 Gün</option>
+                    </select>
+                    <button type="submit" style="width:100%;padding:10px;background:linear-gradient(135deg,#10b981,#059669);
+                      border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Uzat →</button>
+                  </form>
+                </div>
+              </div>
+              <!-- DÜZENLE MODAL -->
+              <div id="m-duzenle-{{ lic.id }}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+                z-index:1000;align-items:center;justify-content:center">
+                <div style="background:#1c2a40;border:1px solid #2d4060;border-radius:14px;padding:28px;width:360px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+                    <b style="font-size:15px">Müşteri Bilgilerini Düzenle</b>
+                    <button onclick="document.getElementById('m-duzenle-'+{{ lic.id }}).style.display='none'"
+                      style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer">✕</button>
+                  </div>
+                  <form method="POST" action="/edit/{{ lic.id }}">
+                    {% for fname,fval,fph in [
+                      ('customer_name', lic.customer_name or '', 'Müşteri adı'),
+                      ('customer_email', lic.customer_email or '', 'E-posta'),
+                      ('customer_phone', lic.customer_phone or '', 'Telefon'),
+                      ('notes', lic.notes or '', 'Not')
+                    ] %}
+                    <input name="{{ fname }}" value="{{ fval }}" placeholder="{{ fph }}"
+                      style="width:100%;background:#111827;border:1px solid #253347;border-radius:8px;
+                        padding:9px 12px;color:#e2e8f0;font-size:13px;margin-bottom:10px;outline:none">
+                    {% endfor %}
+                    <button type="submit" style="width:100%;padding:10px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);
+                      border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">Kaydet →</button>
+                  </form>
+                </div>
+              </div>
+              <!-- İPTAL MODAL -->
+              {% if not lic.is_revoked %}
+              <div id="m-iptal-{{ lic.id }}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+                z-index:1000;align-items:center;justify-content:center">
+                <div style="background:#1c2a40;border:1px solid #2d4060;border-radius:14px;padding:28px;width:340px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+                    <b style="font-size:15px">Lisansı İptal Et</b>
+                    <button onclick="document.getElementById('m-iptal-'+{{ lic.id }}).style.display='none'"
+                      style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer">✕</button>
+                  </div>
+                  <form method="POST" action="/revoke/{{ lic.id }}">
+                    <input name="reason" placeholder="İptal gerekçesi (opsiyonel)"
+                      style="width:100%;background:#111827;border:1px solid #253347;border-radius:8px;
+                        padding:9px 12px;color:#e2e8f0;font-size:13px;margin-bottom:14px;outline:none">
+                    <button type="submit" style="width:100%;padding:10px;background:linear-gradient(135deg,#ef4444,#dc2626);
+                      border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">İptal Et →</button>
+                  </form>
+                </div>
+              </div>
+              {% endif %}
             </td>
           </tr>
           {% else %}
@@ -892,6 +942,25 @@ PANEL_HTML = """<!DOCTYPE html>
 <div id="toast">✓ Panoya kopyalandı</div>
 
 <script>
+function openModal(id) {
+  document.getElementById(id).style.display = 'flex'
+}
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none'
+}
+// ESC ile kapat
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none')
+  }
+})
+// Overlay tıklayınca kapat
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal')) {
+    e.target.style.display = 'none'
+  }
+})
+
 function cpKey(t) {
   navigator.clipboard.writeText(t).then(() => {
     const el = document.getElementById('toast')
@@ -918,8 +987,17 @@ function flt() {
 
 // Dropdown dışına tıklayınca kapat
 document.addEventListener('click', e => {
-  if (!e.target.closest('details.drop'))
+  if (!e.target.closest('details.drop')) {
     document.querySelectorAll('details.drop[open]').forEach(d => d.removeAttribute('open'))
+  }
+})
+
+// Summary tıklandığında diğer dropdownları kapat
+document.addEventListener('click', e => {
+  const clicked = e.target.closest('details.drop')
+  document.querySelectorAll('details.drop[open]').forEach(d => {
+    if (d !== clicked) d.removeAttribute('open')
+  })
 })
 </script>
 </body>
