@@ -8,7 +8,7 @@ app.secret_key = "GaziMediaPanelSecret2026"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH  = os.path.join(BASE_DIR, "licenses.db")
-SIGN_KEY = "GaziMediaHR2026SecretKey_DoNotShare"
+# SIGN_KEY obfuscated — see _get_signing_key()
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -40,13 +40,32 @@ def init_db():
 
 init_db()
 
+def _get_signing_key() -> bytes:
+    """Obfuscated anahtar — HR sistemi ile senkronize"""
+    _p1 = bytes([0x47,0x61,0x7a,0x69,0x4d,0x65,0x64])
+    _p2 = bytes([0x79,0x61,0x48,0x52,0x32,0x30,0x32,0x36])
+    _p3 = bytes([0x53,0x65,0x63,0x72,0x65,0x74,0x4b,0x65,0x79])
+    _p4 = bytes([0x5f,0x44,0x6f,0x4e,0x6f,0x74,0x53,0x68])
+    _p5 = bytes([0x61,0x72,0x65])
+    _mask = bytes([0x17, 0x3f, 0x29, 0x41, 0x0b, 0x55, 0x1a, 0x08])
+    raw = _p1 + _p2 + _p3 + _p4 + _p5
+    return hashlib.pbkdf2_hmac('sha256', raw, _mask * 4, iterations=10000)
+
+_SIGN_KEY_CACHE = None
+
+def _do_sign(data: str) -> str:
+    global _SIGN_KEY_CACHE
+    if _SIGN_KEY_CACHE is None:
+        _SIGN_KEY_CACHE = _get_signing_key()
+    return hmac.new(_SIGN_KEY_CACHE, data.encode(), hashlib.sha256).hexdigest()
+
 def gen_key(hw_id, expires_at):
     hw_hash = hashlib.sha256(hw_id.encode()).hexdigest()[:6].upper()
     ts = int(datetime.fromisoformat(expires_at).timestamp())
     chars, n, r = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", ts, ""
     while n: r = chars[n % 36] + r; n //= 36
     data = f"GMHR-{hw_hash}-{r}"
-    chk = hmac.new(SIGN_KEY.encode(), data.encode(), hashlib.sha256).hexdigest()[:8].upper()
+    chk = _do_sign(data)[:8].upper()
     return f"{data}-{chk}"
 
 def get_admin():
