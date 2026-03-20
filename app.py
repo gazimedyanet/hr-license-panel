@@ -24,7 +24,13 @@ def init_db():
         customer_name TEXT, customer_email TEXT, customer_phone TEXT,
         issued_at TEXT DEFAULT CURRENT_TIMESTAMP, expires_at TEXT NOT NULL,
         is_revoked INTEGER DEFAULT 0, revoke_reason TEXT,
-        last_seen TEXT, verify_count INTEGER DEFAULT 0, notes TEXT)""")
+        last_seen TEXT, verify_count INTEGER DEFAULT 0, notes TEXT,
+        package TEXT DEFAULT 'enterprise')""")
+    # package kolonu yoksa ekle (mevcut DB için)
+    try:
+        conn.execute("ALTER TABLE licenses ADD COLUMN package TEXT DEFAULT 'enterprise'")
+        conn.commit()
+    except: pass
     conn.execute("""CREATE TABLE IF NOT EXISTS admin_settings (
         key TEXT PRIMARY KEY, value TEXT)""")
     conn.execute("""CREATE TABLE IF NOT EXISTS audit_log (
@@ -145,14 +151,15 @@ def create():
     email    = request.form.get('customer_email','').strip()
     phone    = request.form.get('customer_phone','').strip()
     notes    = request.form.get('notes','').strip()
+    package  = request.form.get('package', 'enterprise').strip()
     if not hw_id: return "Donanım ID gerekli", 400
     expires = (datetime.now() + timedelta(days=days)).isoformat()
     key = gen_key(hw_id, expires)
     conn = get_db()
     try:
         conn.execute("""INSERT INTO licenses
-            (license_key,hw_id,customer_name,customer_email,customer_phone,expires_at,notes)
-            VALUES(?,?,?,?,?,?,?)""", (key,hw_id,customer,email,phone,expires,notes))
+            (license_key,hw_id,customer_name,customer_email,customer_phone,expires_at,notes,package)
+            VALUES(?,?,?,?,?,?,?,?)""", (key,hw_id,customer,email,phone,expires,notes,package))
         conn.commit()
         log('LİSANS OLUŞTURULDU', f'{customer} | {expires[:10]}')
     except sqlite3.IntegrityError:
@@ -236,7 +243,9 @@ def verify():
     conn.execute("UPDATE licenses SET last_seen=?,verify_count=verify_count+1 WHERE id=?",
                  (datetime.now().isoformat(), lic['id']))
     conn.commit(); conn.close()
-    return jsonify({"valid":True,"expires":exp.strftime('%d.%m.%Y'),"customer":lic['customer_name'],"message":"Geçerli"})
+    return jsonify({"valid":True,"expires":exp.strftime('%d.%m.%Y'),
+                    "customer":lic['customer_name'],"message":"Geçerli",
+                    "package":lic['package'] if lic['package'] else "enterprise"})
 
 # ═══════════════════════════════════════════════════════════════
 # HTML
@@ -592,6 +601,12 @@ td{padding:10px 12px;vertical-align:middle}
               <option value="90">90 Gün</option>
               <option value="180">6 Ay</option>
             </select></div>
+          <div class="field"><label>Paket</label>
+            <select name="package">
+              <option value="starter">🥉 Başlangıç — Personel, İzin, Mesai</option>
+              <option value="standard">🥈 Standart — + Avans, Harcama, Bordro</option>
+              <option value="enterprise" selected>🥇 Kurumsal — Tüm Modüller</option>
+            </select></div>
           <div class="field"><label>E-posta</label>
             <input name="customer_email" type="email" placeholder="info@firma.com"></div>
           <div class="field"><label>Telefon</label>
@@ -622,7 +637,7 @@ td{padding:10px 12px;vertical-align:middle}
     <div class="tbl">
       <table>
         <thead><tr>
-          <th>#</th><th>Müşteri</th><th>Lisans Anahtarı</th><th>HW ID</th>
+          <th>#</th><th>Müşteri</th><th>Paket</th><th>Lisans Anahtarı</th><th>HW ID</th>
           <th>Son Geçerlilik</th><th>Son Görülme</th><th>Kullanım</th><th>Durum</th><th>İşlemler</th>
         </tr></thead>
         <tbody>
@@ -637,6 +652,15 @@ td{padding:10px 12px;vertical-align:middle}
             <div style="font-weight:600">{{l.customer_name or '—'}}</div>
             {% if l.customer_email %}<div style="font-size:11px;color:var(--t3)">{{l.customer_email}}</div>{% endif %}
             {% if l.customer_phone %}<div style="font-size:11px;color:var(--t3)">{{l.customer_phone}}</div>{% endif %}
+          </td>
+          <td>
+            {% if l.package == 'starter' %}
+              <span style="background:rgba(16,185,129,.1);color:#34d399;border:1px solid rgba(16,185,129,.2);padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">🥉 Başlangıç</span>
+            {% elif l.package == 'standard' %}
+              <span style="background:rgba(59,130,246,.1);color:#93c5fd;border:1px solid rgba(59,130,246,.2);padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">🥈 Standart</span>
+            {% else %}
+              <span style="background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2);padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">🥇 Kurumsal</span>
+            {% endif %}
           </td>
           <td>
             <span class="kbox" onclick="cpKey('{{l.license_key}}')">
@@ -687,7 +711,7 @@ td{padding:10px 12px;vertical-align:middle}
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="9" style="text-align:center;padding:48px;color:var(--t3)">
+        <tr><td colspan="10" style="text-align:center;padding:48px;color:var(--t3)">
           <div style="font-size:24px;margin-bottom:8px">◈</div>
           Henüz lisans yok. Yukarıdan oluşturun.
         </td></tr>
