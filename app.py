@@ -209,11 +209,12 @@ def restore(lid):
 @auth
 def edit(lid):
     conn = get_db()
-    conn.execute("UPDATE licenses SET customer_name=?,customer_email=?,customer_phone=?,notes=? WHERE id=?",
+    pkg = request.form.get('package', 'enterprise')
+    conn.execute("UPDATE licenses SET customer_name=?,customer_email=?,customer_phone=?,notes=?,package=? WHERE id=?",
                  (request.form.get('customer_name',''), request.form.get('customer_email',''),
-                  request.form.get('customer_phone',''), request.form.get('notes',''), lid))
+                  request.form.get('customer_phone',''), request.form.get('notes',''), pkg, lid))
     conn.commit(); conn.close()
-    log('LİSANS DÜZENLENDİ', f'ID:{lid}')
+    log('LİSANS DÜZENLENDİ', f'ID:{lid} | Paket: {pkg}')
     return redirect('/')
 
 @app.route('/delete/<int:lid>', methods=['POST'])
@@ -769,6 +770,12 @@ td{padding:10px 12px;vertical-align:middle}
       <label>E-posta</label><input name="customer_email" value="{{l.customer_email or ''}}">
       <label>Telefon</label><input name="customer_phone" value="{{l.customer_phone or ''}}">
       <label>Not</label><input name="notes" value="{{l.notes or ''}}">
+      <label style="margin-top:8px">Paket</label>
+      <select name="package" style="margin-bottom:12px">
+        <option value="starter" {{'selected' if l.package == 'starter' else ''}}>🥉 Başlangıç</option>
+        <option value="standard" {{'selected' if l.package == 'standard' else ''}}>🥈 Standart</option>
+        <option value="enterprise" {{'selected' if not l.package or l.package == 'enterprise' else ''}}>🥇 Kurumsal</option>
+      </select>
       <button type="submit" class="btn bv">Kaydet →</button>
     </form>
   </div>
