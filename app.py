@@ -520,199 +520,134 @@ def health():
 
 
 LOGIN_HTML = """
-<!doctype html>
+LOGIN_HTML = """<!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Giriş</title>
-<style>
-body{font-family:Arial,sans-serif;max-width:420px;margin:60px auto;padding:20px;background:#0f172a;color:#fff}
-.box{background:#1e293b;padding:24px;border-radius:12px}
-input,button{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:1px solid #334155}
-button{background:#2563eb;color:#fff;border:none;cursor:pointer}
-.err{background:#7f1d1d;padding:10px;border-radius:8px;margin-bottom:12px}
-a{color:#93c5fd}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gazi Medya - Giriş</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#07111f;
+      --panel:#0f1b2d;
+      --panel-2:#14243b;
+      --line:#223552;
+      --text:#e8eef8;
+      --muted:#8ea2bf;
+      --blue:#3b82f6;
+      --cyan:#06b6d4;
+      --danger:#ef4444;
+    }
+    body{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top left, rgba(59,130,246,.20), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(6,182,212,.14), transparent 28%),
+        linear-gradient(160deg,#07111f 0%,#0b1526 100%);
+      font-family:Segoe UI,system-ui,sans-serif;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .shell{
+      width:100%;
+      max-width:420px;
+      background:rgba(15,27,45,.88);
+      backdrop-filter:blur(18px);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:24px;
+      padding:34px 30px 28px;
+      box-shadow:0 24px 80px rgba(0,0,0,.45);
+    }
+    .logo{
+      width:64px;height:64px;border-radius:18px;
+      background:linear-gradient(135deg,var(--blue),var(--cyan));
+      display:flex;align-items:center;justify-content:center;
+      font-size:28px;margin:0 auto 18px;
+      box-shadow:0 16px 40px rgba(59,130,246,.35);
+    }
+    h1{
+      text-align:center;
+      font-size:24px;
+      font-weight:800;
+      margin-bottom:6px;
+    }
+    .sub{
+      text-align:center;
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:28px;
+    }
+    .err{
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.28);
+      color:#fecaca;
+      border-radius:12px;
+      padding:12px 14px;
+      margin-bottom:16px;
+      font-size:13px;
+    }
+    label{
+      display:block;
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.12em;
+      color:var(--muted);
+      margin-bottom:8px;
+      text-transform:uppercase;
+    }
+    input{
+      width:100%;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      color:var(--text);
+      border-radius:14px;
+      padding:14px 16px;
+      font-size:14px;
+      outline:none;
+      margin-bottom:16px;
+      transition:.2s;
+    }
+    input:focus{
+      border-color:var(--blue);
+      box-shadow:0 0 0 4px rgba(59,130,246,.14);
+    }
+    button{
+      width:100%;
+      border:none;
+      border-radius:14px;
+      padding:14px 16px;
+      background:linear-gradient(135deg,var(--blue),#2563eb);
+      color:#fff;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 16px 34px rgba(37,99,235,.28);
+      transition:.2s;
+    }
+    button:hover{transform:translateY(-1px)}
+  </style>
 </head>
 <body>
-<div class="box">
-<h2>Gazi Medya Lisans Paneli</h2>
-{% if error %}<div class="err">{{ error }}</div>{% endif %}
-<form method="POST">
-<input name="username" placeholder="Kullanıcı adı" required>
-<input name="password" type="password" placeholder="Şifre" required>
-<button type="submit">Giriş Yap</button>
-</form>
-</div>
-</body>
-</html>
-"""
-
-CHANGE_PASS_HTML = """
-<!doctype html>
-<html lang="tr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Şifre Değiştir</title>
-<style>
-body{font-family:Arial,sans-serif;max-width:520px;margin:40px auto;padding:20px}
-.card{border:1px solid #ddd;padding:24px;border-radius:12px}
-input,button{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:1px solid #ccc}
-button{background:#2563eb;color:#fff;border:none}
-.ok{background:#dcfce7;padding:10px;border-radius:8px;margin-bottom:10px}
-.er{background:#fee2e2;padding:10px;border-radius:8px;margin-bottom:10px}
-</style>
-</head>
-<body>
-<p><a href="/">Panele Dön</a> | <a href="/logout">Çıkış</a></p>
-<div class="card">
-<h2>Şifre Değiştir</h2>
-{% if msg %}<div class="ok">{{ msg }}</div>{% endif %}
-{% if err %}<div class="er">{{ err }}</div>{% endif %}
-<form method="POST">
-<input type="password" name="current" placeholder="Mevcut şifre" required>
-<input type="password" name="new_pass" placeholder="Yeni şifre" required>
-<input type="password" name="confirm" placeholder="Yeni şifre tekrar" required>
-<button type="submit">Güncelle</button>
-</form>
-</div>
-</body>
-</html>
-"""
-
-PANEL_HTML = """
-<!doctype html>
-<html lang="tr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lisans Paneli</title>
-<style>
-body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;margin:0}
-.wrap{max-width:1280px;margin:0 auto;padding:24px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-a,button{cursor:pointer}
-.card{background:#1e293b;border-radius:14px;padding:18px;margin-bottom:18px}
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-.stat{background:#0f172a;border-radius:12px;padding:16px}
-input,select,button{padding:10px;border-radius:8px;border:1px solid #475569}
-button{background:#2563eb;color:#fff;border:none}
-table{width:100%;border-collapse:collapse}
-th,td{padding:10px;border-bottom:1px solid #334155;text-align:left;font-size:14px}
-small{color:#94a3b8}
-.badge{padding:4px 8px;border-radius:999px;font-size:12px}
-.green{background:#064e3b}.red{background:#7f1d1d}.amber{background:#78350f}
-</style>
-</head>
-<body>
-<div class="wrap">
-<div class="top">
-  <h1>Gazi Medya Lisans Paneli</h1>
-  <div><a href="/change-password">Şifre Değiştir</a> | <a href="/logout">Çıkış</a></div>
-</div>
-
-<div class="card">
-  <h3>İstatistik</h3>
-  <div class="grid">
-    <div class="stat">Toplam<br><strong>{{ stats.total }}</strong></div>
-    <div class="stat">Aktif<br><strong>{{ stats.active }}</strong></div>
-    <div class="stat">Dolmuş<br><strong>{{ stats.expired }}</strong></div>
-    <div class="stat">İptal<br><strong>{{ stats.revoked }}</strong></div>
-    <div class="stat">Yaklaşan<br><strong>{{ stats.expiring }}</strong></div>
+  <div class="shell">
+    <div class="logo">🔐</div>
+    <h1>Gazi Medya</h1>
+    <div class="sub">Lisans Yönetim Paneli</div>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <form method="POST">
+      <label>Kullanıcı Adı</label>
+      <input name="username" autocomplete="username" required autofocus>
+      <label>Şifre</label>
+      <input name="password" type="password" autocomplete="current-password" required>
+      <button type="submit">Giriş Yap</button>
+    </form>
   </div>
-</div>
-
-<div class="card">
-  <h3>Yeni Lisans</h3>
-  <form method="POST" action="/create">
-    <p><small>Ürün</small><br>
-      <select name="product">
-        <option value="gazi-hr">Gazi HR</option>
-        <option value="autoservis-crm">AutoServis CRM</option>
-        <option value="fiyat-teklifi">Fiyat Teklifi</option>
-      </select>
-    </p>
-    <p><small>Donanım ID</small><br><input name="hw_id" required></p>
-    <p><small>Müşteri</small><br><input name="customer_name"></p>
-    <p><small>E-posta</small><br><input name="customer_email"></p>
-    <p><small>Telefon</small><br><input name="customer_phone"></p>
-    <p><small>Gün</small><br>
-      <select name="days">
-        <option value="365">365</option>
-        <option value="730">730</option>
-        <option value="180">180</option>
-        <option value="90">90</option>
-        <option value="30">30</option>
-      </select>
-    </p>
-    <p><small>Paket</small><br>
-      <select name="package">
-        <option value="starter">starter</option>
-        <option value="standard">standard</option>
-        <option value="enterprise" selected>enterprise</option>
-      </select>
-    </p>
-    <p><small>Not</small><br><input name="notes"></p>
-    <button type="submit">Lisans Oluştur</button>
-  </form>
-</div>
-
-<div class="card">
-  <h3>Lisanslar</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Ürün</th>
-        <th>Müşteri</th>
-        <th>Lisans</th>
-        <th>HW ID</th>
-        <th>Son Geçerlilik</th>
-        <th>Kullanım</th>
-        <th>Durum</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for l in licenses %}
-      {% set is_exp = l.expires_at < now %}
-      <tr>
-        <td>{{ l.id }}</td>
-        <td>{{ l.product }}</td>
-        <td>{{ l.customer_name or '-' }}</td>
-        <td>{{ l.license_key }}</td>
-        <td>{{ l.hw_id }}</td>
-        <td>{{ l.expires_at[:10] }}</td>
-        <td>{{ l.verify_count or 0 }}</td>
-        <td>
-          {% if l.is_revoked %}
-            <span class="badge red">İptal</span>
-          {% elif is_exp %}
-            <span class="badge amber">Dolmuş</span>
-          {% else %}
-            <span class="badge green">Aktif</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="8">Kayıt yok</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<div class="card">
-  <h3>Son Loglar</h3>
-  {% for lg in logs %}
-    <p><strong>{{ lg.action }}</strong> - {{ lg.detail or '-' }} <small>({{ lg.created_at }})</small></p>
-  {% else %}
-    <p>Kayıt yok</p>
-  {% endfor %}
-</div>
-</div>
 </body>
-</html>
+</html>"""
+
 """
 
 if __name__ == "__main__":
