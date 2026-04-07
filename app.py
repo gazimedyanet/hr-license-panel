@@ -519,7 +519,6 @@ def health():
     return jsonify({"ok": True, "service": "license-panel"})
 
 
-LOGIN_HTML = """
 LOGIN_HTML = """<!DOCTYPE html>
 <html lang="tr">
 <head>
