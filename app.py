@@ -42,6 +42,7 @@ def init_db():
         )
         """
     )
+
     for col, dflt in [("package", "'enterprise'"), ("product", "'gazi-hr'")]:
         try:
             conn.execute(f"ALTER TABLE licenses ADD COLUMN {col} TEXT DEFAULT {dflt}")
@@ -57,6 +58,7 @@ def init_db():
         )
         """
     )
+
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS audit_log (
@@ -71,6 +73,7 @@ def init_db():
     existing = conn.execute(
         "SELECT value FROM admin_settings WHERE key='admin_pass_hash'"
     ).fetchone()
+
     if not existing:
         h = hashlib.sha256("GaziMedia2026!".encode()).hexdigest()
         conn.execute("INSERT INTO admin_settings VALUES ('admin_pass_hash',?)", (h,))
@@ -272,6 +275,7 @@ def index():
     }
     logs = conn.execute("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 25").fetchall()
     conn.close()
+
     return render_template_string(
         PANEL_HTML,
         licenses=licenses,
@@ -647,7 +651,606 @@ LOGIN_HTML = """<!DOCTYPE html>
 </body>
 </html>"""
 
-"""
+CHANGE_PASS_HTML = """<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Şifre Değiştir</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#07111f;
+      --nav:#0c1627;
+      --panel:#0f1b2d;
+      --line:#223552;
+      --text:#e8eef8;
+      --muted:#8ea2bf;
+      --blue:#3b82f6;
+      --ok:#10b981;
+      --danger:#ef4444;
+    }
+    body{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top left, rgba(59,130,246,.16), transparent 28%),
+        linear-gradient(160deg,#07111f 0%,#0b1526 100%);
+      color:var(--text);
+      font-family:Segoe UI,system-ui,sans-serif;
+    }
+    nav{
+      height:64px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 28px;
+      background:rgba(12,22,39,.86);
+      border-bottom:1px solid rgba(255,255,255,.06);
+      backdrop-filter:blur(14px);
+    }
+    .brand{font-weight:800}
+    .nav-links a{
+      color:var(--muted);
+      text-decoration:none;
+      margin-left:14px;
+      font-size:13px;
+    }
+    .wrap{
+      max-width:560px;
+      margin:40px auto;
+      padding:0 20px;
+    }
+    .card{
+      background:rgba(15,27,45,.9);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:24px;
+      padding:28px;
+      box-shadow:0 24px 80px rgba(0,0,0,.35);
+    }
+    h1{font-size:26px;margin-bottom:8px}
+    .sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+    .ok,.er{
+      padding:12px 14px;
+      border-radius:12px;
+      margin-bottom:16px;
+      font-size:13px;
+    }
+    .ok{
+      background:rgba(16,185,129,.12);
+      border:1px solid rgba(16,185,129,.28);
+      color:#bbf7d0;
+    }
+    .er{
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.28);
+      color:#fecaca;
+    }
+    label{
+      display:block;
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.12em;
+      color:var(--muted);
+      margin-bottom:8px;
+      text-transform:uppercase;
+    }
+    input{
+      width:100%;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      color:var(--text);
+      border-radius:14px;
+      padding:14px 16px;
+      font-size:14px;
+      outline:none;
+      margin-bottom:16px;
+    }
+    input:focus{
+      border-color:var(--blue);
+      box-shadow:0 0 0 4px rgba(59,130,246,.14);
+    }
+    button{
+      width:100%;
+      border:none;
+      border-radius:14px;
+      padding:14px 16px;
+      background:linear-gradient(135deg,var(--blue),#2563eb);
+      color:#fff;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand">Gazi Medya</div>
+    <div class="nav-links">
+      <a href="/">Panele Dön</a>
+      <a href="/logout">Çıkış</a>
+    </div>
+  </nav>
+  <div class="wrap">
+    <div class="card">
+      <h1>Şifre Değiştir</h1>
+      <div class="sub">Panel giriş şifrenizi güvenli şekilde güncelleyin.</div>
+      {% if msg %}<div class="ok">{{ msg }}</div>{% endif %}
+      {% if err %}<div class="er">{{ err }}</div>{% endif %}
+      <form method="POST">
+        <label>Mevcut Şifre</label>
+        <input type="password" name="current" required>
+        <label>Yeni Şifre</label>
+        <input type="password" name="new_pass" required minlength="8">
+        <label>Yeni Şifre Tekrar</label>
+        <input type="password" name="confirm" required>
+        <button type="submit">Şifreyi Güncelle</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>"""
+
+PANEL_HTML = """<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gazi Medya Lisans Paneli</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#07111f;
+      --bg-2:#0b1526;
+      --panel:#0f1b2d;
+      --line:#223552;
+      --text:#e8eef8;
+      --muted:#8ea2bf;
+      --blue:#3b82f6;
+      --cyan:#06b6d4;
+      --green:#10b981;
+      --amber:#f59e0b;
+      --red:#ef4444;
+      --orange:#f97316;
+    }
+    body{
+      background:
+        radial-gradient(circle at top left, rgba(59,130,246,.16), transparent 22%),
+        radial-gradient(circle at bottom right, rgba(6,182,212,.10), transparent 22%),
+        linear-gradient(160deg,var(--bg) 0%,var(--bg-2) 100%);
+      color:var(--text);
+      min-height:100vh;
+      font-family:Segoe UI,system-ui,sans-serif;
+    }
+    nav{
+      height:68px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 28px;
+      background:rgba(12,22,39,.86);
+      border-bottom:1px solid rgba(255,255,255,.06);
+      backdrop-filter:blur(14px);
+      position:sticky;
+      top:0;
+      z-index:30;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .brand-badge{
+      width:34px;height:34px;border-radius:10px;
+      background:linear-gradient(135deg,var(--blue),var(--cyan));
+      display:flex;align-items:center;justify-content:center;
+    }
+    .brand h1{font-size:16px;font-weight:800}
+    .brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+    .nav-links a{
+      color:var(--muted);
+      text-decoration:none;
+      margin-left:14px;
+      font-size:13px;
+    }
+    .wrap{
+      max-width:1460px;
+      margin:0 auto;
+      padding:28px;
+    }
+    .hero{
+      background:linear-gradient(135deg,#132742 0%,#18345a 55%,#0f2d49 100%);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:26px;
+      padding:24px;
+      margin-bottom:20px;
+      box-shadow:0 24px 80px rgba(0,0,0,.28);
+    }
+    .hero-top{
+      display:flex;
+      justify-content:space-between;
+      gap:18px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+    }
+    .hero h2{
+      font-size:28px;
+      font-weight:800;
+      margin-bottom:8px;
+    }
+    .hero p{
+      color:#c8d7ec;
+      max-width:720px;
+      line-height:1.6;
+      font-size:14px;
+    }
+    .hero-meta{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(140px,1fr));
+      gap:12px;
+      min-width:320px;
+    }
+    .meta-box{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      padding:14px;
+    }
+    .meta-box .k{
+      font-size:10px;
+      color:#b7c7df;
+      letter-spacing:.12em;
+      font-weight:700;
+      margin-bottom:6px;
+      text-transform:uppercase;
+    }
+    .meta-box .v{
+      font-size:18px;
+      font-weight:800;
+    }
+    .tabs{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:20px 0 18px;
+    }
+    .tab{
+      padding:10px 16px;
+      border-radius:999px;
+      text-decoration:none;
+      border:1px solid var(--line);
+      color:var(--muted);
+      background:rgba(255,255,255,.03);
+      font-size:13px;
+      font-weight:700;
+    }
+    .tab.on{color:#fff;border-color:rgba(255,255,255,.18)}
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:14px;
+      margin-bottom:20px;
+    }
+    .stat{
+      background:rgba(15,27,45,.88);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:20px;
+      padding:18px 20px;
+    }
+    .stat .k{
+      color:var(--muted);
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      margin-bottom:8px;
+      font-weight:700;
+    }
+    .stat .v{
+      font-size:32px;
+      font-weight:800;
+      line-height:1;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:18px;
+      align-items:start;
+    }
+    .card{
+      background:rgba(15,27,45,.9);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:22px;
+      overflow:hidden;
+    }
+    .card-head{
+      padding:18px 20px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.02);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .card-head h3{
+      font-size:14px;
+      font-weight:800;
+      letter-spacing:.04em;
+    }
+    .card-body{padding:20px}
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+    .full{grid-column:1 / -1}
+    label{
+      display:block;
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.12em;
+      color:var(--muted);
+      margin-bottom:8px;
+      text-transform:uppercase;
+    }
+    input,select{
+      width:100%;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      color:var(--text);
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:14px;
+      outline:none;
+    }
+    .actions{
+      margin-top:16px;
+      display:flex;
+      justify-content:flex-end;
+    }
+    .btn{
+      border:none;
+      border-radius:14px;
+      padding:12px 18px;
+      font-size:13px;
+      font-weight:800;
+      cursor:pointer;
+      background:linear-gradient(135deg,var(--blue),#2563eb);
+      color:#fff;
+    }
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:collapse}
+    th,td{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      text-align:left;
+      font-size:13px;
+      white-space:nowrap;
+    }
+    th{
+      color:var(--muted);
+      font-size:11px;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      font-weight:800;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+    }
+    .green{background:rgba(16,185,129,.16);color:#86efac}
+    .amber{background:rgba(245,158,11,.16);color:#fcd34d}
+    .red{background:rgba(239,68,68,.16);color:#fca5a5}
+    .log{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .log-item{
+      padding:12px 14px;
+      border-radius:14px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.05);
+    }
+    .log-item strong{display:block;margin-bottom:4px}
+    .log-item small{color:var(--muted)}
+    @media (max-width:1100px){
+      .grid{grid-template-columns:1fr}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .hero-meta{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:720px){
+      .wrap{padding:18px}
+      .stats{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+      .hero-meta{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand">
+      <div class="brand-badge">🔐</div>
+      <div>
+        <h1>Gazi Medya</h1>
+        <small>Lisans Yönetim Paneli</small>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="/change-password">Şifre Değiştir</a>
+      <a href="/logout">Çıkış</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-top">
+        <div>
+          <h2>Lisansları tek yerden yönetin</h2>
+          <p>Gazi HR, AutoServis CRM ve Fiyat Teklifi ürünleri için lisans üretimi, takibi, doğrulama geçmişi ve yenileme işlemlerini merkezi olarak yönetin.</p>
+        </div>
+        <div class="hero-meta">
+          <div class="meta-box"><div class="k">Toplam Lisans</div><div class="v">{{ stats.total }}</div></div>
+          <div class="meta-box"><div class="k">Aktif Lisans</div><div class="v">{{ stats.active }}</div></div>
+          <div class="meta-box"><div class="k">Yaklaşan Süre Sonu</div><div class="v">{{ stats.expiring }}</div></div>
+          <div class="meta-box"><div class="k">İptal Kayıt</div><div class="v">{{ stats.revoked }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <a href="/?product=all" class="tab {{ 'on' if prod_filter=='all' else '' }}">Tümü ({{ stats.total }})</a>
+      <a href="/?product=gazi-hr" class="tab {{ 'on' if prod_filter=='gazi-hr' else '' }}">Gazi HR ({{ stats.hr_count }})</a>
+      <a href="/?product=autoservis-crm" class="tab {{ 'on' if prod_filter=='autoservis-crm' else '' }}">AutoServis CRM ({{ stats.asc_count }})</a>
+      <a href="/?product=fiyat-teklifi" class="tab {{ 'on' if prod_filter=='fiyat-teklifi' else '' }}">Fiyat Teklifi ({{ stats.ft_count }})</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Toplam</div><div class="v">{{ stats.total }}</div></div>
+      <div class="stat"><div class="k">Aktif</div><div class="v">{{ stats.active }}</div></div>
+      <div class="stat"><div class="k">Dolmuş</div><div class="v">{{ stats.expired }}</div></div>
+      <div class="stat"><div class="k">İptal</div><div class="v">{{ stats.revoked }}</div></div>
+      <div class="stat"><div class="k">30 Gün İçinde</div><div class="v">{{ stats.expiring }}</div></div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <h3>Yeni Lisans Oluştur</h3>
+          </div>
+          <div class="card-body">
+            <form method="POST" action="/create">
+              <div class="form-grid">
+                <div>
+                  <label>Ürün</label>
+                  <select name="product">
+                    <option value="gazi-hr">Gazi HR</option>
+                    <option value="autoservis-crm">AutoServis CRM</option>
+                    <option value="fiyat-teklifi">Fiyat Teklifi</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Lisans Süresi</label>
+                  <select name="days">
+                    <option value="365">1 Yıl</option>
+                    <option value="730">2 Yıl</option>
+                    <option value="180">6 Ay</option>
+                    <option value="90">90 Gün</option>
+                    <option value="30">30 Gün</option>
+                  </select>
+                </div>
+                <div class="full">
+                  <label>Donanım ID</label>
+                  <input name="hw_id" required placeholder="726045-5C90CF-8F2E29-237140">
+                </div>
+                <div>
+                  <label>Müşteri / Firma</label>
+                  <input name="customer_name" placeholder="ETA Analitik">
+                </div>
+                <div>
+                  <label>Paket</label>
+                  <select name="package">
+                    <option value="starter">Starter</option>
+                    <option value="standard">Standard</option>
+                    <option value="enterprise" selected>Enterprise</option>
+                  </select>
+                </div>
+                <div>
+                  <label>E-posta</label>
+                  <input name="customer_email" placeholder="info@firma.com">
+                </div>
+                <div>
+                  <label>Telefon</label>
+                  <input name="customer_phone" placeholder="+90 ...">
+                </div>
+                <div class="full">
+                  <label>Not</label>
+                  <input name="notes" placeholder="Sipariş no, özel not, temsilci bilgisi...">
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn" type="submit">Lisans Oluştur</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="card-head">
+            <h3>Lisanslar</h3>
+          </div>
+          <div class="card-body table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Ürün</th>
+                  <th>Müşteri</th>
+                  <th>Lisans Anahtarı</th>
+                  <th>HW ID</th>
+                  <th>Son Geçerlilik</th>
+                  <th>Kullanım</th>
+                  <th>Durum</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for l in licenses %}
+                {% set is_exp = l.expires_at < now %}
+                <tr>
+                  <td>{{ l.id }}</td>
+                  <td>{{ l.product }}</td>
+                  <td>{{ l.customer_name or '-' }}</td>
+                  <td>{{ l.license_key }}</td>
+                  <td>{{ l.hw_id }}</td>
+                  <td>{{ l.expires_at[:10] }}</td>
+                  <td>{{ l.verify_count or 0 }}</td>
+                  <td>
+                    {% if l.is_revoked %}
+                      <span class="pill red">İptal</span>
+                    {% elif is_exp %}
+                      <span class="pill amber">Dolmuş</span>
+                    {% else %}
+                      <span class="pill green">Aktif</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8">Henüz lisans kaydı yok.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <h3>Son İşlemler</h3>
+          </div>
+          <div class="card-body">
+            <div class="log">
+              {% for lg in logs %}
+              <div class="log-item">
+                <strong>{{ lg.action }}</strong>
+                <div>{{ lg.detail or '-' }}</div>
+                <small>{{ lg.created_at }}</small>
+              </div>
+              {% else %}
+              <div class="log-item">Kayıt yok.</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>"""
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
