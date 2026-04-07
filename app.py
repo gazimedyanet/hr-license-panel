@@ -101,9 +101,9 @@ _K_FT = [
 ]
 
 PRODUCTS = {
-    "gazi-hr": {"prefix": "GMHR", "key": _K_HR, "label": "Gazi HR", "color": "#3b82f6"},
-    "autoservis-crm": {"prefix": "ASC", "key": _K_ASC, "label": "AutoServis CRM", "color": "#f97316"},
-    "fiyat-teklifi": {"prefix": "FTK", "key": _K_FT, "label": "Fiyat Teklifi", "color": "#10b981"},
+    "gazi-hr": {"prefix": "GMHR", "key": _K_HR, "label": "Gazi HR", "color": "#3b82f6", "emoji": "👥"},
+    "autoservis-crm": {"prefix": "ASC", "key": _K_ASC, "label": "AutoServis CRM", "color": "#f97316", "emoji": "🔧"},
+    "fiyat-teklifi": {"prefix": "FTK", "key": _K_FT, "label": "Fiyat Teklifi", "color": "#10b981", "emoji": "📊"},
 }
 
 
@@ -244,16 +244,20 @@ def change_password():
 def index():
     conn = get_db()
     prod_filter = request.args.get("product", "all")
+
     if prod_filter != "all":
         licenses = conn.execute(
-            "SELECT * FROM licenses WHERE product=? ORDER BY issued_at DESC",
+            "SELECT * FROM licenses WHERE product=? ORDER BY issued_at DESC, id DESC",
             (prod_filter,),
         ).fetchall()
     else:
-        licenses = conn.execute("SELECT * FROM licenses ORDER BY issued_at DESC").fetchall()
+        licenses = conn.execute(
+            "SELECT * FROM licenses ORDER BY issued_at DESC, id DESC"
+        ).fetchall()
 
     now = datetime.now().isoformat()
     soon = (datetime.now() + timedelta(days=30)).isoformat()
+
     stats = {
         "total": conn.execute("SELECT COUNT(*) FROM licenses").fetchone()[0],
         "active": conn.execute(
@@ -264,16 +268,27 @@ def index():
             "SELECT COUNT(*) FROM licenses WHERE expires_at<? AND is_revoked=0",
             (now,),
         ).fetchone()[0],
-        "revoked": conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=1").fetchone()[0],
+        "revoked": conn.execute(
+            "SELECT COUNT(*) FROM licenses WHERE is_revoked=1"
+        ).fetchone()[0],
         "expiring": conn.execute(
             "SELECT COUNT(*) FROM licenses WHERE is_revoked=0 AND expires_at>? AND expires_at<?",
             (now, soon),
         ).fetchone()[0],
-        "hr_count": conn.execute("SELECT COUNT(*) FROM licenses WHERE product='gazi-hr'").fetchone()[0],
-        "asc_count": conn.execute("SELECT COUNT(*) FROM licenses WHERE product='autoservis-crm'").fetchone()[0],
-        "ft_count": conn.execute("SELECT COUNT(*) FROM licenses WHERE product='fiyat-teklifi'").fetchone()[0],
+        "hr_count": conn.execute(
+            "SELECT COUNT(*) FROM licenses WHERE product='gazi-hr'"
+        ).fetchone()[0],
+        "asc_count": conn.execute(
+            "SELECT COUNT(*) FROM licenses WHERE product='autoservis-crm'"
+        ).fetchone()[0],
+        "ft_count": conn.execute(
+            "SELECT COUNT(*) FROM licenses WHERE product='fiyat-teklifi'"
+        ).fetchone()[0],
     }
-    logs = conn.execute("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 25").fetchall()
+
+    logs = conn.execute(
+        "SELECT * FROM audit_log ORDER BY created_at DESC, id DESC LIMIT 25"
+    ).fetchall()
     conn.close()
 
     return render_template_string(
@@ -301,13 +316,24 @@ def create():
 
     if product not in PRODUCTS:
         product = "gazi-hr"
+
     if not hw_id:
         return "Donanım ID gerekli", 400
 
     expires = (datetime.now() + timedelta(days=days)).isoformat()
-    key = gen_key(hw_id, expires, product)
 
     conn = get_db()
+    existing = conn.execute(
+        "SELECT id FROM licenses WHERE hw_id=? AND product=?",
+        (hw_id, product),
+    ).fetchone()
+
+    if existing:
+        conn.close()
+        return "<script>alert('Bu HW ID ve ürün için zaten lisans var. Mevcut kaydı uzatın veya düzenleyin.');history.back()</script>"
+
+    key = gen_key(hw_id, expires, product)
+
     try:
         conn.execute(
             """
@@ -318,10 +344,11 @@ def create():
             (key, hw_id, product, customer, email, phone, expires, notes, package),
         )
         conn.commit()
-        log("LİSANS OLUŞTURULDU", f"{customer} | {PRODUCTS[product]['label']} | {expires[:10]}")
+        log("LİSANS OLUŞTURULDU", f"{customer or 'Müşteri yok'} | {PRODUCTS[product]['label']} | {expires[:10]}")
     except sqlite3.IntegrityError:
         conn.close()
-        return "<script>alert('Bu HW ID + ürün kombinasyonu için zaten lisans var!');history.back()</script>"
+        return "<script>alert('Lisans oluşturulamadı. Aynı lisans anahtarı zaten mevcut.');history.back()</script>"
+
     conn.close()
     return redirect("/")
 
@@ -332,19 +359,26 @@ def extend(lid):
     days = int(request.form.get("days", 365))
     conn = get_db()
     lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
+
     if lic:
         cur = datetime.fromisoformat(lic["expires_at"])
         if cur < datetime.now():
             cur = datetime.now()
+
         new_exp = cur + timedelta(days=days)
         product = lic["product"] or "gazi-hr"
         new_key = gen_key(lic["hw_id"], new_exp.isoformat(), product)
+
         conn.execute(
-            "UPDATE licenses SET license_key=?,expires_at=?,is_revoked=0 WHERE id=?",
+            "UPDATE licenses SET license_key=?, expires_at=?, is_revoked=0, revoke_reason=NULL WHERE id=?",
             (new_key, new_exp.isoformat(), lid),
         )
         conn.commit()
-        log("LİSANS UZATILDI", f"ID:{lid} | {lic['customer_name']} | +{days}g → {new_exp.strftime('%d.%m.%Y')}")
+        log(
+            "LİSANS UZATILDI",
+            f"ID:{lid} | {lic['customer_name'] or '-'} | +{days} gün | {new_exp.strftime('%d.%m.%Y')}",
+        )
+
     conn.close()
     return redirect("/")
 
@@ -352,13 +386,20 @@ def extend(lid):
 @app.route("/revoke/<int:lid>", methods=["POST"])
 @auth
 def revoke(lid):
-    reason = request.form.get("reason", "")
+    reason = request.form.get("reason", "").strip()
     conn = get_db()
     lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
-    conn.execute("UPDATE licenses SET is_revoked=1,revoke_reason=? WHERE id=?", (reason, lid))
+    conn.execute(
+        "UPDATE licenses SET is_revoked=1, revoke_reason=? WHERE id=?",
+        (reason, lid),
+    )
     conn.commit()
     conn.close()
-    log("LİSANS İPTAL", f"ID:{lid} | {lic['customer_name'] if lic else ''} | {reason}")
+
+    log(
+        "LİSANS İPTAL",
+        f"ID:{lid} | {lic['customer_name'] if lic else ''} | {reason or 'Sebep girilmedi'}",
+    )
     return redirect("/")
 
 
@@ -367,9 +408,13 @@ def revoke(lid):
 def restore(lid):
     conn = get_db()
     lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
-    conn.execute("UPDATE licenses SET is_revoked=0,revoke_reason=NULL WHERE id=?", (lid,))
+    conn.execute(
+        "UPDATE licenses SET is_revoked=0, revoke_reason=NULL WHERE id=?",
+        (lid,),
+    )
     conn.commit()
     conn.close()
+
     log("LİSANS AKTİFLEŞTİRİLDİ", f"ID:{lid} | {lic['customer_name'] if lic else ''}")
     return redirect("/")
 
@@ -378,21 +423,27 @@ def restore(lid):
 @auth
 def edit(lid):
     conn = get_db()
-    pkg = request.form.get("package", "enterprise")
-    conn.execute(
-        "UPDATE licenses SET customer_name=?,customer_email=?,customer_phone=?,notes=?,package=? WHERE id=?",
-        (
-            request.form.get("customer_name", ""),
-            request.form.get("customer_email", ""),
-            request.form.get("customer_phone", ""),
-            request.form.get("notes", ""),
-            pkg,
-            lid,
-        ),
-    )
-    conn.commit()
+    lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
+    if lic:
+        pkg = request.form.get("package", "enterprise").strip()
+        conn.execute(
+            """
+            UPDATE licenses
+            SET customer_name=?, customer_email=?, customer_phone=?, notes=?, package=?
+            WHERE id=?
+            """,
+            (
+                request.form.get("customer_name", "").strip(),
+                request.form.get("customer_email", "").strip(),
+                request.form.get("customer_phone", "").strip(),
+                request.form.get("notes", "").strip(),
+                pkg,
+                lid,
+            ),
+        )
+        conn.commit()
+        log("LİSANS DÜZENLENDİ", f"ID:{lid} | Paket:{pkg}")
     conn.close()
-    log("LİSANS DÜZENLENDİ", f"ID:{lid} | Paket: {pkg}")
     return redirect("/")
 
 
@@ -404,6 +455,7 @@ def delete(lid):
     conn.execute("DELETE FROM licenses WHERE id=?", (lid,))
     conn.commit()
     conn.close()
+
     log("LİSANS SİLİNDİ", f"ID:{lid} | {lic['customer_name'] if lic else ''}")
     return redirect("/")
 
@@ -446,7 +498,7 @@ def _verify_core(key: str, hw: str, product: str):
         return None, {"valid": False, "message": f"Lisans algoritması uyuşmuyor: {math_message}"}
 
     conn.execute(
-        "UPDATE licenses SET last_seen=?,verify_count=verify_count+1 WHERE id=?",
+        "UPDATE licenses SET last_seen=?, verify_count=verify_count+1 WHERE id=?",
         (datetime.now().isoformat(), lic["id"]),
     )
     conn.commit()
@@ -526,729 +578,934 @@ def health():
 LOGIN_HTML = """<!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Gazi Medya - Giriş</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    :root{
-      --bg:#07111f;
-      --panel:#0f1b2d;
-      --panel-2:#14243b;
-      --line:#223552;
-      --text:#e8eef8;
-      --muted:#8ea2bf;
-      --blue:#3b82f6;
-      --cyan:#06b6d4;
-      --danger:#ef4444;
-    }
-    body{
-      min-height:100vh;
-      background:
-        radial-gradient(circle at top left, rgba(59,130,246,.20), transparent 30%),
-        radial-gradient(circle at bottom right, rgba(6,182,212,.14), transparent 28%),
-        linear-gradient(160deg,#07111f 0%,#0b1526 100%);
-      font-family:Segoe UI,system-ui,sans-serif;
-      color:var(--text);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:24px;
-    }
-    .shell{
-      width:100%;
-      max-width:420px;
-      background:rgba(15,27,45,.88);
-      backdrop-filter:blur(18px);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:24px;
-      padding:34px 30px 28px;
-      box-shadow:0 24px 80px rgba(0,0,0,.45);
-    }
-    .logo{
-      width:64px;height:64px;border-radius:18px;
-      background:linear-gradient(135deg,var(--blue),var(--cyan));
-      display:flex;align-items:center;justify-content:center;
-      font-size:28px;margin:0 auto 18px;
-      box-shadow:0 16px 40px rgba(59,130,246,.35);
-    }
-    h1{
-      text-align:center;
-      font-size:24px;
-      font-weight:800;
-      margin-bottom:6px;
-    }
-    .sub{
-      text-align:center;
-      color:var(--muted);
-      font-size:13px;
-      margin-bottom:28px;
-    }
-    .err{
-      background:rgba(239,68,68,.12);
-      border:1px solid rgba(239,68,68,.28);
-      color:#fecaca;
-      border-radius:12px;
-      padding:12px 14px;
-      margin-bottom:16px;
-      font-size:13px;
-    }
-    label{
-      display:block;
-      font-size:11px;
-      font-weight:700;
-      letter-spacing:.12em;
-      color:var(--muted);
-      margin-bottom:8px;
-      text-transform:uppercase;
-    }
-    input{
-      width:100%;
-      background:rgba(255,255,255,.04);
-      border:1px solid var(--line);
-      color:var(--text);
-      border-radius:14px;
-      padding:14px 16px;
-      font-size:14px;
-      outline:none;
-      margin-bottom:16px;
-      transition:.2s;
-    }
-    input:focus{
-      border-color:var(--blue);
-      box-shadow:0 0 0 4px rgba(59,130,246,.14);
-    }
-    button{
-      width:100%;
-      border:none;
-      border-radius:14px;
-      padding:14px 16px;
-      background:linear-gradient(135deg,var(--blue),#2563eb);
-      color:#fff;
-      font-size:14px;
-      font-weight:700;
-      cursor:pointer;
-      box-shadow:0 16px 34px rgba(37,99,235,.28);
-      transition:.2s;
-    }
-    button:hover{transform:translateY(-1px)}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gazi Medya - Giriş</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07111f;
+  --panel:#0f1b2d;
+  --line:#223552;
+  --text:#e8eef8;
+  --muted:#8ea2bf;
+  --blue:#3b82f6;
+  --cyan:#06b6d4;
+  --danger:#ef4444;
+}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top left, rgba(59,130,246,.20), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(6,182,212,.14), transparent 28%),
+    linear-gradient(160deg,#07111f 0%,#0b1526 100%);
+  font-family:Segoe UI,system-ui,sans-serif;
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+.shell{
+  width:100%;
+  max-width:420px;
+  background:rgba(15,27,45,.9);
+  backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:24px;
+  padding:34px 30px 28px;
+  box-shadow:0 24px 80px rgba(0,0,0,.45);
+}
+.logo{
+  width:64px;height:64px;border-radius:18px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;margin:0 auto 18px;
+  box-shadow:0 16px 40px rgba(59,130,246,.35);
+}
+h1{text-align:center;font-size:24px;font-weight:800;margin-bottom:6px}
+.sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:28px}
+.err{
+  background:rgba(239,68,68,.12);
+  border:1px solid rgba(239,68,68,.28);
+  color:#fecaca;
+  border-radius:12px;
+  padding:12px 14px;
+  margin-bottom:16px;
+  font-size:13px;
+}
+label{
+  display:block;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.12em;
+  color:var(--muted);
+  margin-bottom:8px;
+  text-transform:uppercase;
+}
+input{
+  width:100%;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--line);
+  color:var(--text);
+  border-radius:14px;
+  padding:14px 16px;
+  font-size:14px;
+  outline:none;
+  margin-bottom:16px;
+}
+input:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 4px rgba(59,130,246,.14);
+}
+button{
+  width:100%;
+  border:none;
+  border-radius:14px;
+  padding:14px 16px;
+  background:linear-gradient(135deg,var(--blue),#2563eb);
+  color:#fff;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+</style>
 </head>
 <body>
-  <div class="shell">
-    <div class="logo">🔐</div>
-    <h1>Gazi Medya</h1>
-    <div class="sub">Lisans Yönetim Paneli</div>
-    {% if error %}<div class="err">{{ error }}</div>{% endif %}
-    <form method="POST">
-      <label>Kullanıcı Adı</label>
-      <input name="username" autocomplete="username" required autofocus>
-      <label>Şifre</label>
-      <input name="password" type="password" autocomplete="current-password" required>
-      <button type="submit">Giriş Yap</button>
-    </form>
-  </div>
+<div class="shell">
+  <div class="logo">🔐</div>
+  <h1>Gazi Medya</h1>
+  <div class="sub">Lisans Yönetim Paneli</div>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <form method="POST">
+    <label>Kullanıcı Adı</label>
+    <input name="username" autocomplete="username" required autofocus>
+    <label>Şifre</label>
+    <input name="password" type="password" autocomplete="current-password" required>
+    <button type="submit">Giriş Yap</button>
+  </form>
+</div>
 </body>
 </html>"""
 
 CHANGE_PASS_HTML = """<!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Şifre Değiştir</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    :root{
-      --bg:#07111f;
-      --nav:#0c1627;
-      --panel:#0f1b2d;
-      --line:#223552;
-      --text:#e8eef8;
-      --muted:#8ea2bf;
-      --blue:#3b82f6;
-      --ok:#10b981;
-      --danger:#ef4444;
-    }
-    body{
-      min-height:100vh;
-      background:
-        radial-gradient(circle at top left, rgba(59,130,246,.16), transparent 28%),
-        linear-gradient(160deg,#07111f 0%,#0b1526 100%);
-      color:var(--text);
-      font-family:Segoe UI,system-ui,sans-serif;
-    }
-    nav{
-      height:64px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 28px;
-      background:rgba(12,22,39,.86);
-      border-bottom:1px solid rgba(255,255,255,.06);
-      backdrop-filter:blur(14px);
-    }
-    .brand{font-weight:800}
-    .nav-links a{
-      color:var(--muted);
-      text-decoration:none;
-      margin-left:14px;
-      font-size:13px;
-    }
-    .wrap{
-      max-width:560px;
-      margin:40px auto;
-      padding:0 20px;
-    }
-    .card{
-      background:rgba(15,27,45,.9);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:24px;
-      padding:28px;
-      box-shadow:0 24px 80px rgba(0,0,0,.35);
-    }
-    h1{font-size:26px;margin-bottom:8px}
-    .sub{color:var(--muted);font-size:13px;margin-bottom:24px}
-    .ok,.er{
-      padding:12px 14px;
-      border-radius:12px;
-      margin-bottom:16px;
-      font-size:13px;
-    }
-    .ok{
-      background:rgba(16,185,129,.12);
-      border:1px solid rgba(16,185,129,.28);
-      color:#bbf7d0;
-    }
-    .er{
-      background:rgba(239,68,68,.12);
-      border:1px solid rgba(239,68,68,.28);
-      color:#fecaca;
-    }
-    label{
-      display:block;
-      font-size:11px;
-      font-weight:700;
-      letter-spacing:.12em;
-      color:var(--muted);
-      margin-bottom:8px;
-      text-transform:uppercase;
-    }
-    input{
-      width:100%;
-      background:rgba(255,255,255,.04);
-      border:1px solid var(--line);
-      color:var(--text);
-      border-radius:14px;
-      padding:14px 16px;
-      font-size:14px;
-      outline:none;
-      margin-bottom:16px;
-    }
-    input:focus{
-      border-color:var(--blue);
-      box-shadow:0 0 0 4px rgba(59,130,246,.14);
-    }
-    button{
-      width:100%;
-      border:none;
-      border-radius:14px;
-      padding:14px 16px;
-      background:linear-gradient(135deg,var(--blue),#2563eb);
-      color:#fff;
-      font-size:14px;
-      font-weight:700;
-      cursor:pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Şifre Değiştir</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07111f;
+  --nav:#0c1627;
+  --panel:#0f1b2d;
+  --line:#223552;
+  --text:#e8eef8;
+  --muted:#8ea2bf;
+  --blue:#3b82f6;
+  --ok:#10b981;
+  --danger:#ef4444;
+}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top left, rgba(59,130,246,.16), transparent 28%),
+    linear-gradient(160deg,#07111f 0%,#0b1526 100%);
+  color:var(--text);
+  font-family:Segoe UI,system-ui,sans-serif;
+}
+nav{
+  height:64px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 28px;
+  background:rgba(12,22,39,.86);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  backdrop-filter:blur(14px);
+}
+.brand{font-weight:800}
+.nav-links a{
+  color:var(--muted);
+  text-decoration:none;
+  margin-left:14px;
+  font-size:13px;
+}
+.wrap{
+  max-width:560px;
+  margin:40px auto;
+  padding:0 20px;
+}
+.card{
+  background:rgba(15,27,45,.9);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:24px;
+  padding:28px;
+  box-shadow:0 24px 80px rgba(0,0,0,.35);
+}
+h1{font-size:26px;margin-bottom:8px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+.ok,.er{
+  padding:12px 14px;
+  border-radius:12px;
+  margin-bottom:16px;
+  font-size:13px;
+}
+.ok{
+  background:rgba(16,185,129,.12);
+  border:1px solid rgba(16,185,129,.28);
+  color:#bbf7d0;
+}
+.er{
+  background:rgba(239,68,68,.12);
+  border:1px solid rgba(239,68,68,.28);
+  color:#fecaca;
+}
+label{
+  display:block;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.12em;
+  color:var(--muted);
+  margin-bottom:8px;
+  text-transform:uppercase;
+}
+input{
+  width:100%;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--line);
+  color:var(--text);
+  border-radius:14px;
+  padding:14px 16px;
+  font-size:14px;
+  outline:none;
+  margin-bottom:16px;
+}
+button{
+  width:100%;
+  border:none;
+  border-radius:14px;
+  padding:14px 16px;
+  background:linear-gradient(135deg,var(--blue),#2563eb);
+  color:#fff;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+</style>
 </head>
 <body>
-  <nav>
-    <div class="brand">Gazi Medya</div>
-    <div class="nav-links">
-      <a href="/">Panele Dön</a>
-      <a href="/logout">Çıkış</a>
-    </div>
-  </nav>
-  <div class="wrap">
-    <div class="card">
-      <h1>Şifre Değiştir</h1>
-      <div class="sub">Panel giriş şifrenizi güvenli şekilde güncelleyin.</div>
-      {% if msg %}<div class="ok">{{ msg }}</div>{% endif %}
-      {% if err %}<div class="er">{{ err }}</div>{% endif %}
-      <form method="POST">
-        <label>Mevcut Şifre</label>
-        <input type="password" name="current" required>
-        <label>Yeni Şifre</label>
-        <input type="password" name="new_pass" required minlength="8">
-        <label>Yeni Şifre Tekrar</label>
-        <input type="password" name="confirm" required>
-        <button type="submit">Şifreyi Güncelle</button>
-      </form>
-    </div>
+<nav>
+  <div class="brand">Gazi Medya</div>
+  <div class="nav-links">
+    <a href="/">Panele Dön</a>
+    <a href="/logout">Çıkış</a>
   </div>
+</nav>
+<div class="wrap">
+  <div class="card">
+    <h1>Şifre Değiştir</h1>
+    <div class="sub">Panel giriş şifrenizi güvenli şekilde güncelleyin.</div>
+    {% if msg %}<div class="ok">{{ msg }}</div>{% endif %}
+    {% if err %}<div class="er">{{ err }}</div>{% endif %}
+    <form method="POST">
+      <label>Mevcut Şifre</label>
+      <input type="password" name="current" required>
+      <label>Yeni Şifre</label>
+      <input type="password" name="new_pass" required minlength="8">
+      <label>Yeni Şifre Tekrar</label>
+      <input type="password" name="confirm" required>
+      <button type="submit">Şifreyi Güncelle</button>
+    </form>
+  </div>
+</div>
 </body>
 </html>"""
 
 PANEL_HTML = """<!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Gazi Medya Lisans Paneli</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    :root{
-      --bg:#07111f;
-      --bg-2:#0b1526;
-      --panel:#0f1b2d;
-      --line:#223552;
-      --text:#e8eef8;
-      --muted:#8ea2bf;
-      --blue:#3b82f6;
-      --cyan:#06b6d4;
-      --green:#10b981;
-      --amber:#f59e0b;
-      --red:#ef4444;
-      --orange:#f97316;
-    }
-    body{
-      background:
-        radial-gradient(circle at top left, rgba(59,130,246,.16), transparent 22%),
-        radial-gradient(circle at bottom right, rgba(6,182,212,.10), transparent 22%),
-        linear-gradient(160deg,var(--bg) 0%,var(--bg-2) 100%);
-      color:var(--text);
-      min-height:100vh;
-      font-family:Segoe UI,system-ui,sans-serif;
-    }
-    nav{
-      height:68px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 28px;
-      background:rgba(12,22,39,.86);
-      border-bottom:1px solid rgba(255,255,255,.06);
-      backdrop-filter:blur(14px);
-      position:sticky;
-      top:0;
-      z-index:30;
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-    }
-    .brand-badge{
-      width:34px;height:34px;border-radius:10px;
-      background:linear-gradient(135deg,var(--blue),var(--cyan));
-      display:flex;align-items:center;justify-content:center;
-    }
-    .brand h1{font-size:16px;font-weight:800}
-    .brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
-    .nav-links a{
-      color:var(--muted);
-      text-decoration:none;
-      margin-left:14px;
-      font-size:13px;
-    }
-    .wrap{
-      max-width:1460px;
-      margin:0 auto;
-      padding:28px;
-    }
-    .hero{
-      background:linear-gradient(135deg,#132742 0%,#18345a 55%,#0f2d49 100%);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:26px;
-      padding:24px;
-      margin-bottom:20px;
-      box-shadow:0 24px 80px rgba(0,0,0,.28);
-    }
-    .hero-top{
-      display:flex;
-      justify-content:space-between;
-      gap:18px;
-      flex-wrap:wrap;
-      align-items:flex-start;
-    }
-    .hero h2{
-      font-size:28px;
-      font-weight:800;
-      margin-bottom:8px;
-    }
-    .hero p{
-      color:#c8d7ec;
-      max-width:720px;
-      line-height:1.6;
-      font-size:14px;
-    }
-    .hero-meta{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(140px,1fr));
-      gap:12px;
-      min-width:320px;
-    }
-    .meta-box{
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:16px;
-      padding:14px;
-    }
-    .meta-box .k{
-      font-size:10px;
-      color:#b7c7df;
-      letter-spacing:.12em;
-      font-weight:700;
-      margin-bottom:6px;
-      text-transform:uppercase;
-    }
-    .meta-box .v{
-      font-size:18px;
-      font-weight:800;
-    }
-    .tabs{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin:20px 0 18px;
-    }
-    .tab{
-      padding:10px 16px;
-      border-radius:999px;
-      text-decoration:none;
-      border:1px solid var(--line);
-      color:var(--muted);
-      background:rgba(255,255,255,.03);
-      font-size:13px;
-      font-weight:700;
-    }
-    .tab.on{color:#fff;border-color:rgba(255,255,255,.18)}
-    .stats{
-      display:grid;
-      grid-template-columns:repeat(5,1fr);
-      gap:14px;
-      margin-bottom:20px;
-    }
-    .stat{
-      background:rgba(15,27,45,.88);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:20px;
-      padding:18px 20px;
-    }
-    .stat .k{
-      color:var(--muted);
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      margin-bottom:8px;
-      font-weight:700;
-    }
-    .stat .v{
-      font-size:32px;
-      font-weight:800;
-      line-height:1;
-    }
-    .grid{
-      display:grid;
-      grid-template-columns:1.1fr .9fr;
-      gap:18px;
-      align-items:start;
-    }
-    .card{
-      background:rgba(15,27,45,.9);
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:22px;
-      overflow:hidden;
-    }
-    .card-head{
-      padding:18px 20px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.02);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-    }
-    .card-head h3{
-      font-size:14px;
-      font-weight:800;
-      letter-spacing:.04em;
-    }
-    .card-body{padding:20px}
-    .form-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:14px;
-    }
-    .full{grid-column:1 / -1}
-    label{
-      display:block;
-      font-size:11px;
-      font-weight:700;
-      letter-spacing:.12em;
-      color:var(--muted);
-      margin-bottom:8px;
-      text-transform:uppercase;
-    }
-    input,select{
-      width:100%;
-      background:rgba(255,255,255,.04);
-      border:1px solid var(--line);
-      color:var(--text);
-      border-radius:14px;
-      padding:13px 14px;
-      font-size:14px;
-      outline:none;
-    }
-    .actions{
-      margin-top:16px;
-      display:flex;
-      justify-content:flex-end;
-    }
-    .btn{
-      border:none;
-      border-radius:14px;
-      padding:12px 18px;
-      font-size:13px;
-      font-weight:800;
-      cursor:pointer;
-      background:linear-gradient(135deg,var(--blue),#2563eb);
-      color:#fff;
-    }
-    .table-wrap{overflow:auto}
-    table{width:100%;border-collapse:collapse}
-    th,td{
-      padding:12px 14px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      text-align:left;
-      font-size:13px;
-      white-space:nowrap;
-    }
-    th{
-      color:var(--muted);
-      font-size:11px;
-      letter-spacing:.1em;
-      text-transform:uppercase;
-      font-weight:800;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:5px 10px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:800;
-    }
-    .green{background:rgba(16,185,129,.16);color:#86efac}
-    .amber{background:rgba(245,158,11,.16);color:#fcd34d}
-    .red{background:rgba(239,68,68,.16);color:#fca5a5}
-    .log{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .log-item{
-      padding:12px 14px;
-      border-radius:14px;
-      background:rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.05);
-    }
-    .log-item strong{display:block;margin-bottom:4px}
-    .log-item small{color:var(--muted)}
-    @media (max-width:1100px){
-      .grid{grid-template-columns:1fr}
-      .stats{grid-template-columns:repeat(2,1fr)}
-      .hero-meta{grid-template-columns:1fr 1fr}
-    }
-    @media (max-width:720px){
-      .wrap{padding:18px}
-      .stats{grid-template-columns:1fr}
-      .form-grid{grid-template-columns:1fr}
-      .hero-meta{grid-template-columns:1fr}
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gazi Medya Lisans Paneli</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07111f;
+  --bg2:#0b1526;
+  --panel:#0f1b2d;
+  --panel2:#13233a;
+  --line:#223552;
+  --line2:#314764;
+  --text:#e8eef8;
+  --muted:#8ea2bf;
+  --blue:#3b82f6;
+  --cyan:#06b6d4;
+  --green:#10b981;
+  --amber:#f59e0b;
+  --red:#ef4444;
+  --orange:#f97316;
+}
+body{
+  background:
+    radial-gradient(circle at top left, rgba(59,130,246,.16), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(6,182,212,.10), transparent 22%),
+    linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%);
+  color:var(--text);
+  min-height:100vh;
+  font-family:Segoe UI,system-ui,sans-serif;
+}
+nav{
+  height:70px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 28px;
+  background:rgba(12,22,39,.86);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  backdrop-filter:blur(14px);
+  position:sticky;
+  top:0;
+  z-index:50;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-badge{
+  width:36px;height:36px;border-radius:12px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 10px 28px rgba(59,130,246,.28);
+}
+.brand h1{font-size:16px;font-weight:800}
+.brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.nav-links a{
+  color:var(--muted);
+  text-decoration:none;
+  margin-left:14px;
+  font-size:13px;
+}
+.wrap{max-width:1480px;margin:0 auto;padding:28px}
+.hero{
+  background:linear-gradient(135deg,#132742 0%,#18345a 55%,#0f2d49 100%);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:26px;
+  padding:24px;
+  margin-bottom:20px;
+  box-shadow:0 24px 80px rgba(0,0,0,.28);
+}
+.hero-top{
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+.hero h2{
+  font-size:28px;
+  font-weight:800;
+  margin-bottom:8px;
+}
+.hero p{
+  color:#c8d7ec;
+  max-width:760px;
+  line-height:1.6;
+  font-size:14px;
+}
+.hero-meta{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(140px,1fr));
+  gap:12px;
+  min-width:320px;
+}
+.meta-box{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  padding:14px;
+}
+.meta-box .k{
+  font-size:10px;
+  color:#b7c7df;
+  letter-spacing:.12em;
+  font-weight:700;
+  margin-bottom:6px;
+  text-transform:uppercase;
+}
+.meta-box .v{font-size:18px;font-weight:800}
+.tabs{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0 18px}
+.tab{
+  padding:10px 16px;
+  border-radius:999px;
+  text-decoration:none;
+  border:1px solid var(--line);
+  color:var(--muted);
+  background:rgba(255,255,255,.03);
+  font-size:13px;
+  font-weight:700;
+}
+.tab.on{color:#fff;border-color:rgba(255,255,255,.18);background:rgba(59,130,246,.18)}
+.stats{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
+  margin-bottom:20px;
+}
+.stat{
+  background:rgba(15,27,45,.88);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:20px;
+  padding:18px 20px;
+}
+.stat .k{
+  color:var(--muted);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  margin-bottom:8px;
+  font-weight:700;
+}
+.stat .v{
+  font-size:32px;
+  font-weight:800;
+  line-height:1;
+}
+.grid{
+  display:grid;
+  grid-template-columns:1.08fr .92fr;
+  gap:18px;
+  align-items:start;
+}
+.card{
+  background:rgba(15,27,45,.9);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow:0 18px 50px rgba(0,0,0,.22);
+}
+.card-head{
+  padding:18px 20px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.02);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+}
+.card-head h3{font-size:14px;font-weight:800;letter-spacing:.04em}
+.card-body{padding:20px}
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.full{grid-column:1 / -1}
+label{
+  display:block;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.12em;
+  color:var(--muted);
+  margin-bottom:8px;
+  text-transform:uppercase;
+}
+input,select,textarea{
+  width:100%;
+  background:#0f1b2d;
+  border:1px solid var(--line);
+  color:var(--text);
+  border-radius:14px;
+  padding:13px 14px;
+  font-size:14px;
+  outline:none;
+  font-family:inherit;
+}
+select,option{
+  background:#0f1b2d;
+  color:var(--text);
+}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 4px rgba(59,130,246,.14);
+}
+.actions{margin-top:16px;display:flex;justify-content:flex-end}
+.btn{
+  border:none;
+  border-radius:14px;
+  padding:11px 16px;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+  color:#fff;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.btn-main{background:linear-gradient(135deg,var(--blue),#2563eb)}
+.btn-green{background:linear-gradient(135deg,#10b981,#059669)}
+.btn-orange{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.btn-red{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.btn-muted{background:linear-gradient(135deg,#475569,#334155)}
+.btn-xs{padding:8px 10px;font-size:11px;border-radius:10px}
+.table-wrap{overflow:auto}
+.toolbar{
+  display:flex;gap:10px;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06)
+}
+.search{
+  min-width:280px;flex:1;
+  background:#0f1b2d;border:1px solid var(--line);border-radius:14px;
+  color:var(--text);padding:12px 14px;font-size:13px;
+}
+.filter-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.ftab{
+  border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);
+  border-radius:999px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer
+}
+.ftab.on{color:#fff;background:rgba(59,130,246,.18)}
+table{width:100%;border-collapse:collapse}
+th,td{
+  padding:12px 14px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  text-align:left;
+  font-size:13px;
+  white-space:nowrap;
+  vertical-align:top;
+}
+th{
+  color:var(--muted);
+  font-size:11px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  font-weight:800;
+}
+tr:hover td{background:rgba(255,255,255,.02)}
+.kbox{
+  display:inline-flex;align-items:center;gap:6px;
+  max-width:260px;overflow:hidden;text-overflow:ellipsis;
+  padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);font-family:ui-monospace,Consolas,monospace;cursor:pointer
+}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800
+}
+.green{background:rgba(16,185,129,.16);color:#86efac}
+.amber{background:rgba(245,158,11,.16);color:#fcd34d}
+.red{background:rgba(239,68,68,.16);color:#fca5a5}
+.blue{background:rgba(59,130,246,.16);color:#93c5fd}
+.orange{background:rgba(249,115,22,.16);color:#fdba74}
+.actions-row{display:flex;gap:6px;flex-wrap:wrap}
+.log{display:flex;flex-direction:column;gap:10px}
+.log-item{
+  padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.05)
+}
+.log-item strong{display:block;margin-bottom:4px}
+.log-item small{color:var(--muted)}
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+  align-items:center;justify-content:center;z-index:999;padding:16px
+}
+.modal.open{display:flex}
+.modal-box{
+  width:100%;max-width:460px;background:#101c2f;border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;box-shadow:0 24px 80px rgba(0,0,0,.5);overflow:hidden
+}
+.modal-head{
+  padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;justify-content:space-between
+}
+.modal-head h4{font-size:15px;font-weight:800}
+.modal-close{
+  border:none;background:none;color:var(--muted);font-size:22px;cursor:pointer
+}
+.modal-body{padding:20px}
+.toast{
+  position:fixed;right:18px;bottom:18px;z-index:1200;
+  background:rgba(16,185,129,.95);color:#fff;padding:10px 14px;border-radius:12px;
+  opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.note{font-size:12px;color:var(--muted);line-height:1.6}
+@media (max-width:1120px){
+  .grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .hero-meta{grid-template-columns:1fr 1fr}
+}
+@media (max-width:740px){
+  .wrap{padding:18px}
+  .stats{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .hero-meta{grid-template-columns:1fr}
+}
+</style>
 </head>
 <body>
-  <nav>
-    <div class="brand">
-      <div class="brand-badge">🔐</div>
+<nav>
+  <div class="brand">
+    <div class="brand-badge">🔐</div>
+    <div>
+      <h1>Gazi Medya</h1>
+      <small>Lisans Yönetim Paneli</small>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="/change-password">Şifre Değiştir</a>
+    <a href="/logout">Çıkış</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-top">
       <div>
-        <h1>Gazi Medya</h1>
-        <small>Lisans Yönetim Paneli</small>
+        <h2>Lisansları tek panelden yönet</h2>
+        <p>Gazi HR, AutoServis CRM ve Fiyat Teklifi lisanslarını oluşturun, uzatın, iptal edin, geri açın ve müşteri bazlı takip edin. Tasarım eski paneldeki işlevleri korur ama daha temiz ve modern hale getirildi.</p>
+      </div>
+      <div class="hero-meta">
+        <div class="meta-box"><div class="k">Toplam Lisans</div><div class="v">{{ stats.total }}</div></div>
+        <div class="meta-box"><div class="k">Aktif</div><div class="v">{{ stats.active }}</div></div>
+        <div class="meta-box"><div class="k">30 Gün İçinde</div><div class="v">{{ stats.expiring }}</div></div>
+        <div class="meta-box"><div class="k">İptal</div><div class="v">{{ stats.revoked }}</div></div>
       </div>
     </div>
-    <div class="nav-links">
-      <a href="/change-password">Şifre Değiştir</a>
-      <a href="/logout">Çıkış</a>
-    </div>
-  </nav>
+  </div>
 
-  <div class="wrap">
-    <div class="hero">
-      <div class="hero-top">
-        <div>
-          <h2>Lisansları tek yerden yönetin</h2>
-          <p>Gazi HR, AutoServis CRM ve Fiyat Teklifi ürünleri için lisans üretimi, takibi, doğrulama geçmişi ve yenileme işlemlerini merkezi olarak yönetin.</p>
+  <div class="tabs">
+    <a href="/?product=all" class="tab {{ 'on' if prod_filter=='all' else '' }}">Tümü ({{ stats.total }})</a>
+    <a href="/?product=gazi-hr" class="tab {{ 'on' if prod_filter=='gazi-hr' else '' }}">👥 Gazi HR ({{ stats.hr_count }})</a>
+    <a href="/?product=autoservis-crm" class="tab {{ 'on' if prod_filter=='autoservis-crm' else '' }}">🔧 AutoServis ({{ stats.asc_count }})</a>
+    <a href="/?product=fiyat-teklifi" class="tab {{ 'on' if prod_filter=='fiyat-teklifi' else '' }}">📊 Fiyat Teklifi ({{ stats.ft_count }})</a>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Toplam</div><div class="v">{{ stats.total }}</div></div>
+    <div class="stat"><div class="k">Aktif</div><div class="v">{{ stats.active }}</div></div>
+    <div class="stat"><div class="k">Dolmuş</div><div class="v">{{ stats.expired }}</div></div>
+    <div class="stat"><div class="k">İptal</div><div class="v">{{ stats.revoked }}</div></div>
+    <div class="stat"><div class="k">Yaklaşan</div><div class="v">{{ stats.expiring }}</div></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Yeni Lisans Oluştur</h3>
         </div>
-        <div class="hero-meta">
-          <div class="meta-box"><div class="k">Toplam Lisans</div><div class="v">{{ stats.total }}</div></div>
-          <div class="meta-box"><div class="k">Aktif Lisans</div><div class="v">{{ stats.active }}</div></div>
-          <div class="meta-box"><div class="k">Yaklaşan Süre Sonu</div><div class="v">{{ stats.expiring }}</div></div>
-          <div class="meta-box"><div class="k">İptal Kayıt</div><div class="v">{{ stats.revoked }}</div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tabs">
-      <a href="/?product=all" class="tab {{ 'on' if prod_filter=='all' else '' }}">Tümü ({{ stats.total }})</a>
-      <a href="/?product=gazi-hr" class="tab {{ 'on' if prod_filter=='gazi-hr' else '' }}">Gazi HR ({{ stats.hr_count }})</a>
-      <a href="/?product=autoservis-crm" class="tab {{ 'on' if prod_filter=='autoservis-crm' else '' }}">AutoServis CRM ({{ stats.asc_count }})</a>
-      <a href="/?product=fiyat-teklifi" class="tab {{ 'on' if prod_filter=='fiyat-teklifi' else '' }}">Fiyat Teklifi ({{ stats.ft_count }})</a>
-    </div>
-
-    <div class="stats">
-      <div class="stat"><div class="k">Toplam</div><div class="v">{{ stats.total }}</div></div>
-      <div class="stat"><div class="k">Aktif</div><div class="v">{{ stats.active }}</div></div>
-      <div class="stat"><div class="k">Dolmuş</div><div class="v">{{ stats.expired }}</div></div>
-      <div class="stat"><div class="k">İptal</div><div class="v">{{ stats.revoked }}</div></div>
-      <div class="stat"><div class="k">30 Gün İçinde</div><div class="v">{{ stats.expiring }}</div></div>
-    </div>
-
-    <div class="grid">
-      <div>
-        <div class="card">
-          <div class="card-head">
-            <h3>Yeni Lisans Oluştur</h3>
-          </div>
-          <div class="card-body">
-            <form method="POST" action="/create">
-              <div class="form-grid">
-                <div>
-                  <label>Ürün</label>
-                  <select name="product">
-                    <option value="gazi-hr">Gazi HR</option>
-                    <option value="autoservis-crm">AutoServis CRM</option>
-                    <option value="fiyat-teklifi">Fiyat Teklifi</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Lisans Süresi</label>
-                  <select name="days">
-                    <option value="365">1 Yıl</option>
-                    <option value="730">2 Yıl</option>
-                    <option value="180">6 Ay</option>
-                    <option value="90">90 Gün</option>
-                    <option value="30">30 Gün</option>
-                  </select>
-                </div>
-                <div class="full">
-                  <label>Donanım ID</label>
-                  <input name="hw_id" required placeholder="726045-5C90CF-8F2E29-237140">
-                </div>
-                <div>
-                  <label>Müşteri / Firma</label>
-                  <input name="customer_name" placeholder="ETA Analitik">
-                </div>
-                <div>
-                  <label>Paket</label>
-                  <select name="package">
-                    <option value="starter">Starter</option>
-                    <option value="standard">Standard</option>
-                    <option value="enterprise" selected>Enterprise</option>
-                  </select>
-                </div>
-                <div>
-                  <label>E-posta</label>
-                  <input name="customer_email" placeholder="info@firma.com">
-                </div>
-                <div>
-                  <label>Telefon</label>
-                  <input name="customer_phone" placeholder="+90 ...">
-                </div>
-                <div class="full">
-                  <label>Not</label>
-                  <input name="notes" placeholder="Sipariş no, özel not, temsilci bilgisi...">
-                </div>
+        <div class="card-body">
+          <form method="POST" action="/create">
+            <div class="form-grid">
+              <div>
+                <label>Ürün</label>
+                <select name="product">
+                  <option value="gazi-hr">👥 Gazi HR</option>
+                  <option value="autoservis-crm">🔧 AutoServis CRM</option>
+                  <option value="fiyat-teklifi">📊 Fiyat Teklifi</option>
+                </select>
               </div>
-              <div class="actions">
-                <button class="btn" type="submit">Lisans Oluştur</button>
+              <div>
+                <label>Lisans Süresi</label>
+                <select name="days">
+                  <option value="365">1 Yıl</option>
+                  <option value="730">2 Yıl</option>
+                  <option value="180">6 Ay</option>
+                  <option value="90">90 Gün</option>
+                  <option value="30">30 Gün</option>
+                  <option value="9999">Süresiz</option>
+                </select>
               </div>
-            </form>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:18px">
-          <div class="card-head">
-            <h3>Lisanslar</h3>
-          </div>
-          <div class="card-body table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Ürün</th>
-                  <th>Müşteri</th>
-                  <th>Lisans Anahtarı</th>
-                  <th>HW ID</th>
-                  <th>Son Geçerlilik</th>
-                  <th>Kullanım</th>
-                  <th>Durum</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for l in licenses %}
-                {% set is_exp = l.expires_at < now %}
-                <tr>
-                  <td>{{ l.id }}</td>
-                  <td>{{ l.product }}</td>
-                  <td>{{ l.customer_name or '-' }}</td>
-                  <td>{{ l.license_key }}</td>
-                  <td>{{ l.hw_id }}</td>
-                  <td>{{ l.expires_at[:10] }}</td>
-                  <td>{{ l.verify_count or 0 }}</td>
-                  <td>
-                    {% if l.is_revoked %}
-                      <span class="pill red">İptal</span>
-                    {% elif is_exp %}
-                      <span class="pill amber">Dolmuş</span>
-                    {% else %}
-                      <span class="pill green">Aktif</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="8">Henüz lisans kaydı yok.</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="card">
-          <div class="card-head">
-            <h3>Son İşlemler</h3>
-          </div>
-          <div class="card-body">
-            <div class="log">
-              {% for lg in logs %}
-              <div class="log-item">
-                <strong>{{ lg.action }}</strong>
-                <div>{{ lg.detail or '-' }}</div>
-                <small>{{ lg.created_at }}</small>
+              <div class="full">
+                <label>Donanım ID</label>
+                <input name="hw_id" required placeholder="726045-5C90CF-8F2E29-237140">
               </div>
-              {% else %}
-              <div class="log-item">Kayıt yok.</div>
-              {% endfor %}
+              <div>
+                <label>Müşteri / Firma</label>
+                <input name="customer_name" placeholder="ETA Analitik">
+              </div>
+              <div>
+                <label>Paket</label>
+                <select name="package">
+                  <option value="starter">Starter</option>
+                  <option value="standard">Standard</option>
+                  <option value="enterprise" selected>Enterprise</option>
+                </select>
+              </div>
+              <div>
+                <label>E-posta</label>
+                <input name="customer_email" placeholder="info@firma.com">
+              </div>
+              <div>
+                <label>Telefon</label>
+                <input name="customer_phone" placeholder="+90 ...">
+              </div>
+              <div class="full">
+                <label>Not</label>
+                <textarea name="notes" placeholder="Sipariş no, temsilci, ödeme notu..."></textarea>
+              </div>
             </div>
+            <div class="actions">
+              <button class="btn btn-main" type="submit">Lisans Oluştur</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="card-head">
+          <h3>Lisanslar</h3>
+          <div class="note">{{ licenses|length }} kayıt listeleniyor</div>
+        </div>
+
+        <div class="toolbar">
+          <input class="search" id="srch" placeholder="Müşteri, lisans anahtarı veya HW ID ara..." oninput="flt()">
+          <div class="filter-tabs">
+            <button class="ftab on" type="button" onclick="setF('all',this)">Tümü</button>
+            <button class="ftab" type="button" onclick="setF('active',this)">Aktif</button>
+            <button class="ftab" type="button" onclick="setF('expired',this)">Dolmuş</button>
+            <button class="ftab" type="button" onclick="setF('revoked',this)">İptal</button>
+          </div>
+        </div>
+
+        <div class="card-body table-wrap" style="padding:0">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Ürün</th>
+                <th>Müşteri</th>
+                <th>Paket</th>
+                <th>Lisans Anahtarı</th>
+                <th>HW ID</th>
+                <th>Son Geçerlilik</th>
+                <th>Son Görülme</th>
+                <th>Kullanım</th>
+                <th>Durum</th>
+                <th>İşlemler</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in licenses %}
+              {% set is_exp = l.expires_at < now %}
+              {% set status = 'revoked' if l.is_revoked else ('expired' if is_exp else 'active') %}
+              {% set prod = l.product or 'gazi-hr' %}
+              <tr data-s="{{ status }}" data-q="{{ ((l.customer_name or '') ~ ' ' ~ (l.customer_email or '') ~ ' ' ~ (l.customer_phone or '') ~ ' ' ~ l.license_key ~ ' ' ~ l.hw_id)|lower }}">
+                <td>{{ l.id }}</td>
+                <td>
+                  {% if prod == 'autoservis-crm' %}
+                    <span class="pill orange">🔧 AutoServis</span>
+                  {% elif prod == 'fiyat-teklifi' %}
+                    <span class="pill green">📊 Fiyat Teklifi</span>
+                  {% else %}
+                    <span class="pill blue">👥 Gazi HR</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div style="font-weight:700">{{ l.customer_name or '-' }}</div>
+                  {% if l.customer_email %}<div style="font-size:11px;color:var(--muted)">{{ l.customer_email }}</div>{% endif %}
+                  {% if l.customer_phone %}<div style="font-size:11px;color:var(--muted)">{{ l.customer_phone }}</div>{% endif %}
+                </td>
+                <td>
+                  {% if l.package == 'starter' %}
+                    <span class="pill green">Starter</span>
+                  {% elif l.package == 'standard' %}
+                    <span class="pill blue">Standard</span>
+                  {% else %}
+                    <span class="pill amber">Enterprise</span>
+                  {% endif %}
+                </td>
+                <td><span class="kbox" onclick="copyText('{{ l.license_key }}')">{{ l.license_key }}</span></td>
+                <td><span class="kbox" onclick="copyText('{{ l.hw_id }}')">{{ l.hw_id }}</span></td>
+                <td>{{ l.expires_at[:10] }}</td>
+                <td>
+                  {% if l.last_seen %}
+                    {{ l.last_seen[:10] }}<br><span style="color:var(--muted);font-size:11px">{{ l.last_seen[11:16] }}</span>
+                  {% else %}
+                    <span style="color:var(--muted)">Henüz yok</span>
+                  {% endif %}
+                </td>
+                <td>{{ l.verify_count or 0 }}</td>
+                <td>
+                  {% if l.is_revoked %}
+                    <span class="pill red">İptal</span>
+                  {% elif is_exp %}
+                    <span class="pill amber">Dolmuş</span>
+                  {% else %}
+                    <span class="pill green">Aktif</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="actions-row">
+                    <button class="btn btn-green btn-xs" type="button" onclick="openM('uzat{{ l.id }}')">Uzat</button>
+                    <button class="btn btn-main btn-xs" type="button" onclick="openM('duz{{ l.id }}')">Düzenle</button>
+                    {% if not l.is_revoked %}
+                      <button class="btn btn-orange btn-xs" type="button" onclick="openM('ipt{{ l.id }}')">İptal</button>
+                    {% else %}
+                      <form method="POST" action="/restore/{{ l.id }}" style="display:inline">
+                        <button class="btn btn-green btn-xs" type="submit">Aktifleştir</button>
+                      </form>
+                    {% endif %}
+                    <form method="POST" action="/delete/{{ l.id }}" style="display:inline" onsubmit="return confirm('Bu kayıt kalıcı olarak silinecek. Devam edilsin mi?')">
+                      <button class="btn btn-red btn-xs" type="submit">Sil</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="11" style="padding:32px;color:var(--muted)">Henüz lisans kaydı yok.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Son İşlemler</h3>
+        </div>
+        <div class="card-body">
+          <div class="log">
+            {% for lg in logs %}
+            <div class="log-item">
+              <strong>{{ lg.action }}</strong>
+              <div>{{ lg.detail or '-' }}</div>
+              <small>{{ lg.created_at }}</small>
+            </div>
+            {% else %}
+            <div class="log-item">Kayıt yok.</div>
+            {% endfor %}
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>
+
+{% for l in licenses %}
+<div id="uzat{{ l.id }}" class="modal" onclick="if(event.target===this)closeM('uzat{{ l.id }}')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h4>Süre Uzat</h4>
+      <button class="modal-close" type="button" onclick="closeM('uzat{{ l.id }}')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="/extend/{{ l.id }}">
+        <label>Uzatma Süresi</label>
+        <select name="days">
+          <option value="365">+ 1 Yıl</option>
+          <option value="730">+ 2 Yıl</option>
+          <option value="180">+ 6 Ay</option>
+          <option value="90">+ 90 Gün</option>
+          <option value="30">+ 30 Gün</option>
+        </select>
+        <div class="actions">
+          <button class="btn btn-green" type="submit">Uzat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="duz{{ l.id }}" class="modal" onclick="if(event.target===this)closeM('duz{{ l.id }}')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h4>Lisansı Düzenle</h4>
+      <button class="modal-close" type="button" onclick="closeM('duz{{ l.id }}')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="/edit/{{ l.id }}">
+        <label>Müşteri Adı</label>
+        <input name="customer_name" value="{{ l.customer_name or '' }}">
+        <label>E-posta</label>
+        <input name="customer_email" value="{{ l.customer_email or '' }}">
+        <label>Telefon</label>
+        <input name="customer_phone" value="{{ l.customer_phone or '' }}">
+        <label>Paket</label>
+        <select name="package">
+          <option value="starter" {{ 'selected' if l.package=='starter' else '' }}>Starter</option>
+          <option value="standard" {{ 'selected' if l.package=='standard' else '' }}>Standard</option>
+          <option value="enterprise" {{ 'selected' if not l.package or l.package=='enterprise' else '' }}>Enterprise</option>
+        </select>
+        <label>Not</label>
+        <textarea name="notes">{{ l.notes or '' }}</textarea>
+        <div class="actions">
+          <button class="btn btn-main" type="submit">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if not l.is_revoked %}
+<div id="ipt{{ l.id }}" class="modal" onclick="if(event.target===this)closeM('ipt{{ l.id }}')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h4>Lisansı İptal Et</h4>
+      <button class="modal-close" type="button" onclick="closeM('ipt{{ l.id }}')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="/revoke/{{ l.id }}">
+        <label>İptal Sebebi</label>
+        <textarea name="reason" placeholder="Ödeme yapılmadı, iptal talebi geldi, destek sonlandı..."></textarea>
+        <div class="actions">
+          <button class="btn btn-orange" type="submit">İptal Et</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<div class="toast" id="toast">Kopyalandı</div>
+
+<script>
+let cf='all';
+
+function setF(f,btn){
+  cf=f;
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  flt();
+}
+
+function flt(){
+  const q=document.getElementById('srch').value.toLowerCase();
+  document.querySelectorAll('tbody tr[data-s]').forEach(tr=>{
+    const ms=cf==='all'||tr.dataset.s===cf;
+    const mq=!q||tr.dataset.q.includes(q);
+    tr.style.display=(ms&&mq)?'':'none';
+  });
+}
+
+function openM(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.add('open');
+}
+
+function closeM(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.remove('open');
+}
+
+function copyText(text){
+  navigator.clipboard.writeText(text).then(()=>{
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),1800);
+  });
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'));
+  }
+});
+</script>
 </body>
 </html>"""
 
