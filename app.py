@@ -105,12 +105,18 @@ _K_ETA = [
     0x79, 0x61, 0x32, 0x30, 0x32, 0x36, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74,
     0x4B, 0x65, 0x79, 0x5F, 0x45, 0x54, 0x41, 0x6E, 0x61, 0x6C, 0x69, 0x74
 ]
+# ── YENİ: KKDİK Suite imzalama anahtarı ──────────────────────────────────────
+_K_KKDIK = [
+    75, 75, 68, 73, 75, 83, 117, 105, 116, 101, 50, 48, 50, 54,
+    71, 97, 122, 105, 77, 101, 100, 105, 97, 83, 101, 99, 114, 101, 116, 75, 101, 121
+]
 
 PRODUCTS = {
-    "gazi-hr":       {"prefix": "GMHR",  "key": _K_HR,  "label": "Gazi HR",         "color": "#3b82f6", "emoji": "👥"},
-    "autoservis-crm":{"prefix": "ASC",   "key": _K_ASC, "label": "AutoServis CRM",  "color": "#f97316", "emoji": "🔧"},
-    "fiyat-teklifi": {"prefix": "FTK",   "key": _K_FT,  "label": "Fiyat Teklifi",   "color": "#10b981", "emoji": "📊"},
-    "eta-analitik":  {"prefix": "ETADK", "key": _K_ETA, "label": "ETA Analitik ERP","color": "#8b5cf6", "emoji": "🚢"},
+    "gazi-hr":        {"prefix": "GMHR",  "key": _K_HR,    "label": "Gazi HR",           "color": "#3b82f6", "emoji": "👥"},
+    "autoservis-crm": {"prefix": "ASC",   "key": _K_ASC,   "label": "AutoServis CRM",    "color": "#f97316", "emoji": "🔧"},
+    "fiyat-teklifi":  {"prefix": "FTK",   "key": _K_FT,    "label": "Fiyat Teklifi",     "color": "#10b981", "emoji": "📊"},
+    "eta-analitik":   {"prefix": "ETADK", "key": _K_ETA,   "label": "ETA Analitik ERP",  "color": "#8b5cf6", "emoji": "🚢"},
+    "kkdik":          {"prefix": "KKDIK", "key": _K_KKDIK, "label": "KKDİK Suite",       "color": "#06b6d4", "emoji": "⚗️"},
 }
 
 
@@ -271,10 +277,11 @@ def index():
         "expired":  conn.execute("SELECT COUNT(*) FROM licenses WHERE expires_at<? AND is_revoked=0", (now,)).fetchone()[0],
         "revoked":  conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=1").fetchone()[0],
         "expiring": conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=0 AND expires_at>? AND expires_at<?", (now, soon)).fetchone()[0],
-        "hr_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='gazi-hr'").fetchone()[0],
-        "asc_count": conn.execute("SELECT COUNT(*) FROM licenses WHERE product='autoservis-crm'").fetchone()[0],
-        "ft_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='fiyat-teklifi'").fetchone()[0],
-        "eta_count": conn.execute("SELECT COUNT(*) FROM licenses WHERE product='eta-analitik'").fetchone()[0],
+        "hr_count":    conn.execute("SELECT COUNT(*) FROM licenses WHERE product='gazi-hr'").fetchone()[0],
+        "asc_count":   conn.execute("SELECT COUNT(*) FROM licenses WHERE product='autoservis-crm'").fetchone()[0],
+        "ft_count":    conn.execute("SELECT COUNT(*) FROM licenses WHERE product='fiyat-teklifi'").fetchone()[0],
+        "eta_count":   conn.execute("SELECT COUNT(*) FROM licenses WHERE product='eta-analitik'").fetchone()[0],
+        "kkdik_count": conn.execute("SELECT COUNT(*) FROM licenses WHERE product='kkdik'").fetchone()[0],
     }
 
     logs = conn.execute(
@@ -451,11 +458,11 @@ def _verify_core(key: str, hw: str, product: str):
 
     days_left = (exp - datetime.now()).days
     return lic, {
-        "valid":    True,
-        "expires":  exp.strftime("%d.%m.%Y"),
-        "customer": lic["customer_name"],
-        "message":  "Geçerli",
-        "package":  lic["package"] or "enterprise",
+        "valid":     True,
+        "expires":   exp.strftime("%d.%m.%Y"),
+        "customer":  lic["customer_name"],
+        "message":   "Geçerli",
+        "package":   lic["package"] or "enterprise",
         "days_left": days_left,
     }
 
@@ -484,6 +491,13 @@ def verify_fiyat_teklifi():
 def verify_eta():
     d = request.get_json(silent=True) or {}
     _, result = _verify_core(d.get("license_key","").strip().upper(), d.get("hw_id","").strip(), "eta-analitik")
+    return jsonify(result)
+
+# ── YENİ: KKDİK Suite ────────────────────────────────────────────────────────
+@app.route("/api/kkdik-license", methods=["POST"])
+def verify_kkdik():
+    d = request.get_json(silent=True) or {}
+    _, result = _verify_core(d.get("license_key","").strip().upper(), d.get("hw_id","").strip(), "kkdik")
     return jsonify(result)
 
 @app.route("/api/debug-license-math", methods=["POST"])
@@ -648,6 +662,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .blue{background:rgba(59,130,246,.16);color:#93c5fd}
 .orange{background:rgba(249,115,22,.16);color:#fdba74}
 .purple{background:rgba(139,92,246,.16);color:#c4b5fd}
+.cyan{background:rgba(6,182,212,.16);color:#67e8f9}
 .actions-row{display:flex;gap:6px;flex-wrap:wrap}
 .log{display:flex;flex-direction:column;gap:10px}
 .log-item{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05)}
@@ -683,7 +698,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="hero-top">
       <div>
         <h2>Lisansları tek panelden yönet</h2>
-        <p>Gazi HR, AutoServis CRM, Fiyat Teklifi ve ETA Analitik ERP lisanslarını oluşturun, uzatın, iptal edin ve müşteri bazlı takip edin.</p>
+        <p>Gazi HR, AutoServis CRM, Fiyat Teklifi, ETA Analitik ve KKDİK Suite lisanslarını oluşturun, uzatın, iptal edin ve müşteri bazlı takip edin.</p>
       </div>
       <div class="hero-meta">
         <div class="meta-box"><div class="k">Toplam Lisans</div><div class="v">{{ stats.total }}</div></div>
@@ -695,11 +710,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 
   <div class="tabs">
-    <a href="/?product=all"           class="tab {{ 'on' if prod_filter=='all' else '' }}">Tümü ({{ stats.total }})</a>
-    <a href="/?product=gazi-hr"       class="tab {{ 'on' if prod_filter=='gazi-hr' else '' }}">👥 Gazi HR ({{ stats.hr_count }})</a>
-    <a href="/?product=autoservis-crm"class="tab {{ 'on' if prod_filter=='autoservis-crm' else '' }}">🔧 AutoServis ({{ stats.asc_count }})</a>
-    <a href="/?product=fiyat-teklifi" class="tab {{ 'on' if prod_filter=='fiyat-teklifi' else '' }}">📊 Fiyat Teklifi ({{ stats.ft_count }})</a>
-    <a href="/?product=eta-analitik"  class="tab {{ 'on' if prod_filter=='eta-analitik' else '' }}">🚢 ETA Analitik ({{ stats.eta_count }})</a>
+    <a href="/?product=all"            class="tab {{ 'on' if prod_filter=='all' else '' }}">Tümü ({{ stats.total }})</a>
+    <a href="/?product=gazi-hr"        class="tab {{ 'on' if prod_filter=='gazi-hr' else '' }}">👥 Gazi HR ({{ stats.hr_count }})</a>
+    <a href="/?product=autoservis-crm" class="tab {{ 'on' if prod_filter=='autoservis-crm' else '' }}">🔧 AutoServis ({{ stats.asc_count }})</a>
+    <a href="/?product=fiyat-teklifi"  class="tab {{ 'on' if prod_filter=='fiyat-teklifi' else '' }}">📊 Fiyat Teklifi ({{ stats.ft_count }})</a>
+    <a href="/?product=eta-analitik"   class="tab {{ 'on' if prod_filter=='eta-analitik' else '' }}">🚢 ETA Analitik ({{ stats.eta_count }})</a>
+    <a href="/?product=kkdik"          class="tab {{ 'on' if prod_filter=='kkdik' else '' }}">⚗️ KKDİK Suite ({{ stats.kkdik_count }})</a>
   </div>
 
   <div class="stats">
@@ -724,6 +740,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
                   <option value="autoservis-crm">🔧 AutoServis CRM</option>
                   <option value="fiyat-teklifi">📊 Fiyat Teklifi</option>
                   <option value="eta-analitik">🚢 ETA Analitik ERP</option>
+                  <option value="kkdik">⚗️ KKDİK Suite</option>
                 </select>
               </div>
               <div>
@@ -738,19 +755,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
                 </select>
               </div>
               <div class="full">
-                <label>Donanım ID</label>
-                <input name="hw_id" required placeholder="726045-5C90CF-8F2E29-237140">
+                <label>Donanım ID (HW ID)</label>
+                <input name="hw_id" required placeholder="A1B2C3-D4E5F6-A1B2C3-D4E5F6">
               </div>
               <div>
                 <label>Müşteri / Firma</label>
-                <input name="customer_name" placeholder="ETA Analitik">
+                <input name="customer_name" placeholder="ABC Kimya A.Ş.">
               </div>
               <div>
                 <label>Paket</label>
                 <select name="package">
-                  <option value="starter">Starter</option>
-                  <option value="standard">Standard</option>
-                  <option value="enterprise" selected>Enterprise</option>
+                  <option value="starter">Başlangıç</option>
+                  <option value="standard">Standart</option>
+                  <option value="enterprise" selected>Kurumsal</option>
                 </select>
               </div>
               <div>
@@ -808,6 +825,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
                   {% if prod=='autoservis-crm' %}<span class="pill orange">🔧 AutoServis</span>
                   {% elif prod=='fiyat-teklifi' %}<span class="pill green">📊 Fiyat Teklifi</span>
                   {% elif prod=='eta-analitik' %}<span class="pill purple">🚢 ETA Analitik</span>
+                  {% elif prod=='kkdik' %}<span class="pill cyan">⚗️ KKDİK Suite</span>
                   {% else %}<span class="pill blue">👥 Gazi HR</span>{% endif %}
                 </td>
                 <td>
@@ -816,9 +834,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
                   {% if l.customer_phone %}<div style="font-size:11px;color:var(--muted)">{{ l.customer_phone }}</div>{% endif %}
                 </td>
                 <td>
-                  {% if l.package=='starter' %}<span class="pill green">Starter</span>
-                  {% elif l.package=='standard' %}<span class="pill blue">Standard</span>
-                  {% else %}<span class="pill amber">Enterprise</span>{% endif %}
+                  {% if l.package=='starter' %}<span class="pill blue">Başlangıç</span>
+                  {% elif l.package=='standard' %}<span class="pill purple">Standart</span>
+                  {% else %}<span class="pill amber">Kurumsal</span>{% endif %}
                 </td>
                 <td><span class="kbox" onclick="copyText('{{ l.license_key }}')">{{ l.license_key }}</span></td>
                 <td><span class="kbox" onclick="copyText('{{ l.hw_id }}')">{{ l.hw_id }}</span></td>
@@ -907,9 +925,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <label>Telefon</label><input name="customer_phone" value="{{ l.customer_phone or '' }}">
         <label>Paket</label>
         <select name="package">
-          <option value="starter" {{ 'selected' if l.package=='starter' else '' }}>Starter</option>
-          <option value="standard" {{ 'selected' if l.package=='standard' else '' }}>Standard</option>
-          <option value="enterprise" {{ 'selected' if not l.package or l.package=='enterprise' else '' }}>Enterprise</option>
+          <option value="starter" {{ 'selected' if l.package=='starter' else '' }}>Başlangıç</option>
+          <option value="standard" {{ 'selected' if l.package=='standard' else '' }}>Standart</option>
+          <option value="enterprise" {{ 'selected' if not l.package or l.package=='enterprise' else '' }}>Kurumsal</option>
         </select>
         <label>Not</label><textarea name="notes">{{ l.notes or '' }}</textarea>
         <div class="actions"><button class="btn btn-main" type="submit">Kaydet</button></div>
