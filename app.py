@@ -21,8 +21,7 @@ def get_db():
 
 def init_db():
     conn = get_db()
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS licenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             license_key TEXT UNIQUE NOT NULL,
@@ -40,83 +39,75 @@ def init_db():
             notes TEXT,
             package TEXT DEFAULT 'enterprise'
         )
-        """
-    )
-
+    """)
     for col, dflt in [("package", "'enterprise'"), ("product", "'gazi-hr'")]:
         try:
             conn.execute(f"ALTER TABLE licenses ADD COLUMN {col} TEXT DEFAULT {dflt}")
             conn.commit()
         except Exception:
             pass
-
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS admin_settings (
             key TEXT PRIMARY KEY,
             value TEXT
         )
-        """
-    )
-
-    conn.execute(
-        """
+    """)
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS audit_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             action TEXT,
             detail TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
-        """
-    )
-
-    existing = conn.execute(
-        "SELECT value FROM admin_settings WHERE key='admin_pass_hash'"
-    ).fetchone()
-
+    """)
+    existing = conn.execute("SELECT value FROM admin_settings WHERE key='admin_pass_hash'").fetchone()
     if not existing:
         h = hashlib.sha256("GaziMedia2026!".encode()).hexdigest()
         conn.execute("INSERT INTO admin_settings VALUES ('admin_pass_hash',?)", (h,))
         conn.execute("INSERT OR IGNORE INTO admin_settings VALUES ('admin_user','gazi')")
-
     conn.commit()
     conn.close()
 
 
 init_db()
 
-# ── İmzalama anahtarları ─────────────────────────────────────────────────────
+# ── İmzalama anahtarları ──────────────────────────────────────────────────────
 _K_HR = [
-    0x47, 0x61, 0x7A, 0x69, 0x4D, 0x65, 0x64, 0x79, 0x61, 0x48, 0x52,
-    0x32, 0x30, 0x32, 0x36, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x4B,
-    0x65, 0x79, 0x5F, 0x44, 0x6F, 0x4E, 0x6F, 0x74, 0x53, 0x68, 0x61, 0x72, 0x65
+    0x47,0x61,0x7A,0x69,0x4D,0x65,0x64,0x79,0x61,0x48,0x52,
+    0x32,0x30,0x32,0x36,0x53,0x65,0x63,0x72,0x65,0x74,0x4B,
+    0x65,0x79,0x5F,0x44,0x6F,0x4E,0x6F,0x74,0x53,0x68,0x61,0x72,0x65
 ]
 _K_ASC = [
-    0x41, 0x75, 0x74, 0x6F, 0x53, 0x65, 0x72, 0x76, 0x69, 0x73, 0x43,
-    0x52, 0x4D, 0x2D, 0x32, 0x30, 0x32, 0x35, 0x2D, 0x4C, 0x69, 0x63,
-    0x4B, 0x65, 0x79, 0x2D, 0x47, 0x61, 0x7A, 0x69
+    0x41,0x75,0x74,0x6F,0x53,0x65,0x72,0x76,0x69,0x73,0x43,
+    0x52,0x4D,0x2D,0x32,0x30,0x32,0x35,0x2D,0x4C,0x69,0x63,
+    0x4B,0x65,0x79,0x2D,0x47,0x61,0x7A,0x69
 ]
 _K_FT = [
-    70, 105, 121, 97, 116, 84, 101, 107, 108, 105, 102, 105, 45, 69, 84, 65,
-    45, 65, 110, 97, 108, 105, 116, 105, 107, 45, 50, 48, 50, 54, 45, 76, 105, 99, 75, 101, 121
+    70,105,121,97,116,84,101,107,108,105,102,105,45,69,84,65,
+    45,65,110,97,108,105,116,105,107,45,50,48,50,54,45,76,105,99,75,101,121
 ]
 _K_ETA = [
-    0x45, 0x54, 0x41, 0x44, 0x4B, 0x47, 0x61, 0x7A, 0x69, 0x4D, 0x65, 0x64,
-    0x79, 0x61, 0x32, 0x30, 0x32, 0x36, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74,
-    0x4B, 0x65, 0x79, 0x5F, 0x45, 0x54, 0x41, 0x6E, 0x61, 0x6C, 0x69, 0x74
+    0x45,0x54,0x41,0x44,0x4B,0x47,0x61,0x7A,0x69,0x4D,0x65,0x64,
+    0x79,0x61,0x32,0x30,0x32,0x36,0x53,0x65,0x63,0x72,0x65,0x74,
+    0x4B,0x65,0x79,0x5F,0x45,0x54,0x41,0x6E,0x61,0x6C,0x69,0x74
 ]
-# ── YENİ: KKDİK Suite imzalama anahtarı ──────────────────────────────────────
 _K_KKDIK = [
-    75, 75, 68, 73, 75, 83, 117, 105, 116, 101, 50, 48, 50, 54,
-    71, 97, 122, 105, 77, 101, 100, 105, 97, 83, 101, 99, 114, 101, 116, 75, 101, 121
+    75,75,68,73,75,83,117,105,116,101,50,48,50,54,
+    71,97,122,105,77,101,100,105,97,83,101,99,114,101,116,75,101,121
+]
+_K_ETNTK = [
+    69,116,97,110,111,109,84,101,107,108,105,102,83,105,115,
+    116,101,109,105,50,48,50,54,71,97,122,105,77,101,100,105,
+    97,83,101,99,114,101,116,75,101,121
 ]
 
 PRODUCTS = {
-    "gazi-hr":        {"prefix": "GMHR",  "key": _K_HR,    "label": "Gazi HR",           "color": "#3b82f6", "emoji": "👥"},
-    "autoservis-crm": {"prefix": "ASC",   "key": _K_ASC,   "label": "AutoServis CRM",    "color": "#f97316", "emoji": "🔧"},
-    "fiyat-teklifi":  {"prefix": "FTK",   "key": _K_FT,    "label": "Fiyat Teklifi",     "color": "#10b981", "emoji": "📊"},
-    "eta-analitik":   {"prefix": "ETADK", "key": _K_ETA,   "label": "ETA Analitik ERP",  "color": "#8b5cf6", "emoji": "🚢"},
-    "kkdik":          {"prefix": "KKDIK", "key": _K_KKDIK, "label": "KKDİK Suite",       "color": "#06b6d4", "emoji": "⚗️"},
+    "gazi-hr":        {"prefix":"GMHR",  "key":_K_HR,    "label":"Gazi HR",          "color":"#3b82f6","emoji":"👥"},
+    "autoservis-crm": {"prefix":"ASC",   "key":_K_ASC,   "label":"AutoServis CRM",   "color":"#f97316","emoji":"🔧"},
+    "fiyat-teklifi":  {"prefix":"FTK",   "key":_K_FT,    "label":"Fiyat Teklifi",    "color":"#10b981","emoji":"📊"},
+    "eta-analitik":   {"prefix":"ETADK", "key":_K_ETA,   "label":"ETA Analitik ERP", "color":"#8b5cf6","emoji":"🚢"},
+    "kkdik":          {"prefix":"KKDIK", "key":_K_KKDIK, "label":"KKDİK Suite",      "color":"#06b6d4","emoji":"⚗️"},
+    "etanom-teklif":  {"prefix":"ETNTK", "key":_K_ETNTK, "label":"Etanom Teklif",   "color":"#f59e0b","emoji":"📄"},
 }
 
 
@@ -150,30 +141,23 @@ def validate_key_math(license_key: str, hw_id: str, expires_at: str, product: st
     cfg = PRODUCTS.get(product)
     if not cfg:
         return False, "Bilinmeyen ürün"
-
     key = (license_key or "").strip().upper()
     parts = key.split("-")
     if len(parts) != 4:
         return False, "Lisans formatı hatalı"
-
     prefix, hw_hash, encoded_ts, checksum = parts
-
     if prefix != cfg["prefix"]:
         return False, "Prefix eşleşmiyor"
-
     expected_hash = hashlib.sha256(hw_id.encode()).hexdigest()[:6].upper()
     if hw_hash != expected_hash:
         return False, "HW hash eşleşmiyor"
-
     expected_data = f"{cfg['prefix']}-{expected_hash}-{encoded_ts}"
     expected_checksum = _sign(cfg["key"], expected_data)[:8].upper()
     if checksum != expected_checksum:
         return False, "Checksum eşleşmiyor"
-
     expected_full = gen_key(hw_id, expires_at, product)
     if expected_full != key:
         return False, f"Beklenen anahtar farklı: {expected_full}"
-
     return True, "Matematiksel doğrulama başarılı"
 
 
@@ -201,13 +185,55 @@ def auth(f):
     return d
 
 
-@app.route("/login", methods=["GET", "POST"])
+def _verify_core(key: str, hw: str, product: str):
+    if product not in PRODUCTS:
+        return None, {"valid": False, "message": "Bilinmeyen ürün"}
+    conn = get_db()
+    lic = conn.execute(
+        "SELECT * FROM licenses WHERE license_key=? AND product=?", (key, product)
+    ).fetchone()
+    if not lic:
+        conn.close()
+        return None, {"valid": False, "message": "Lisans bulunamadı"}
+    if lic["is_revoked"]:
+        conn.close()
+        return None, {"valid": False, "message": f"İptal edildi: {lic['revoke_reason'] or ''}"}
+    if lic["hw_id"].upper() != hw.upper():
+        conn.close()
+        return None, {"valid": False, "message": "Donanım eşleşmiyor"}
+    exp = datetime.fromisoformat(lic["expires_at"])
+    if datetime.now() > exp:
+        conn.close()
+        return None, {"valid": False, "message": f"Süresi doldu ({exp.strftime('%d.%m.%Y')})"}
+    ok, math_msg = validate_key_math(lic["license_key"], lic["hw_id"], lic["expires_at"], lic["product"] or product)
+    if not ok:
+        conn.close()
+        return None, {"valid": False, "message": f"Algoritma uyuşmuyor: {math_msg}"}
+    conn.execute(
+        "UPDATE licenses SET last_seen=?, verify_count=verify_count+1 WHERE id=?",
+        (datetime.now().isoformat(), lic["id"]),
+    )
+    conn.commit()
+    conn.close()
+    days_left = (exp - datetime.now()).days
+    return lic, {
+        "valid":     True,
+        "expires":   exp.strftime("%d.%m.%Y"),
+        "customer":  lic["customer_name"],
+        "message":   "Geçerli",
+        "package":   lic["package"] or "enterprise",
+        "days_left": days_left,
+    }
+
+
+# ── Auth routes ───────────────────────────────────────────────────────────────
+@app.route("/login", methods=["GET","POST"])
 def login():
     err = ""
     if request.method == "POST":
         admin_user, admin_hash = get_admin()
-        given = hashlib.sha256(request.form.get("password", "").encode()).hexdigest()
-        if request.form.get("username", "") == admin_user and given == admin_hash:
+        given = hashlib.sha256(request.form.get("password","").encode()).hexdigest()
+        if request.form.get("username","") == admin_user and given == admin_hash:
             session["logged_in"] = True
             log("GİRİŞ", f"Kullanıcı: {admin_user}")
             return redirect("/")
@@ -215,24 +241,22 @@ def login():
         log("BAŞARISIZ GİRİŞ")
     return render_template_string(LOGIN_HTML, error=err)
 
-
 @app.route("/logout")
 def logout():
     log("ÇIKIŞ")
     session.clear()
     return redirect("/login")
 
-
-@app.route("/change-password", methods=["GET", "POST"])
+@app.route("/change-password", methods=["GET","POST"])
 @auth
 def change_password():
     msg = ""
     err = ""
     if request.method == "POST":
         _, admin_hash = get_admin()
-        cur = request.form.get("current", "")
-        new = request.form.get("new_pass", "")
-        conf = request.form.get("confirm", "")
+        cur  = request.form.get("current","")
+        new  = request.form.get("new_pass","")
+        conf = request.form.get("confirm","")
         if hashlib.sha256(cur.encode()).hexdigest() != admin_hash:
             err = "Mevcut şifre hatalı"
         elif len(new) < 8:
@@ -241,10 +265,8 @@ def change_password():
             err = "Şifreler eşleşmiyor"
         else:
             conn = get_db()
-            conn.execute(
-                "UPDATE admin_settings SET value=? WHERE key='admin_pass_hash'",
-                (hashlib.sha256(new.encode()).hexdigest(),),
-            )
+            conn.execute("UPDATE admin_settings SET value=? WHERE key='admin_pass_hash'",
+                         (hashlib.sha256(new.encode()).hexdigest(),))
             conn.commit()
             conn.close()
             log("ŞİFRE DEĞİŞTİRİLDİ")
@@ -252,79 +274,63 @@ def change_password():
     return render_template_string(CHANGE_PASS_HTML, msg=msg, err=err)
 
 
+# ── Panel routes ──────────────────────────────────────────────────────────────
 @app.route("/")
 @auth
 def index():
     conn = get_db()
-    prod_filter = request.args.get("product", "all")
-
+    prod_filter = request.args.get("product","all")
     if prod_filter != "all":
         licenses = conn.execute(
-            "SELECT * FROM licenses WHERE product=? ORDER BY issued_at DESC, id DESC",
-            (prod_filter,),
+            "SELECT * FROM licenses WHERE product=? ORDER BY issued_at DESC, id DESC", (prod_filter,)
         ).fetchall()
     else:
         licenses = conn.execute(
             "SELECT * FROM licenses ORDER BY issued_at DESC, id DESC"
         ).fetchall()
-
-    now = datetime.now().isoformat()
+    now  = datetime.now().isoformat()
     soon = (datetime.now() + timedelta(days=30)).isoformat()
-
     stats = {
-        "total":    conn.execute("SELECT COUNT(*) FROM licenses").fetchone()[0],
-        "active":   conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=0 AND expires_at>?", (now,)).fetchone()[0],
-        "expired":  conn.execute("SELECT COUNT(*) FROM licenses WHERE expires_at<? AND is_revoked=0", (now,)).fetchone()[0],
-        "revoked":  conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=1").fetchone()[0],
-        "expiring": conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=0 AND expires_at>? AND expires_at<?", (now, soon)).fetchone()[0],
-        "hr_count":    conn.execute("SELECT COUNT(*) FROM licenses WHERE product='gazi-hr'").fetchone()[0],
-        "asc_count":   conn.execute("SELECT COUNT(*) FROM licenses WHERE product='autoservis-crm'").fetchone()[0],
-        "ft_count":    conn.execute("SELECT COUNT(*) FROM licenses WHERE product='fiyat-teklifi'").fetchone()[0],
-        "eta_count":   conn.execute("SELECT COUNT(*) FROM licenses WHERE product='eta-analitik'").fetchone()[0],
-        "kkdik_count": conn.execute("SELECT COUNT(*) FROM licenses WHERE product='kkdik'").fetchone()[0],
+        "total":         conn.execute("SELECT COUNT(*) FROM licenses").fetchone()[0],
+        "active":        conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=0 AND expires_at>?", (now,)).fetchone()[0],
+        "expired":       conn.execute("SELECT COUNT(*) FROM licenses WHERE expires_at<? AND is_revoked=0", (now,)).fetchone()[0],
+        "revoked":       conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=1").fetchone()[0],
+        "expiring":      conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=0 AND expires_at>? AND expires_at<?", (now,soon)).fetchone()[0],
+        "hr_count":      conn.execute("SELECT COUNT(*) FROM licenses WHERE product='gazi-hr'").fetchone()[0],
+        "asc_count":     conn.execute("SELECT COUNT(*) FROM licenses WHERE product='autoservis-crm'").fetchone()[0],
+        "ft_count":      conn.execute("SELECT COUNT(*) FROM licenses WHERE product='fiyat-teklifi'").fetchone()[0],
+        "eta_count":     conn.execute("SELECT COUNT(*) FROM licenses WHERE product='eta-analitik'").fetchone()[0],
+        "kkdik_count":   conn.execute("SELECT COUNT(*) FROM licenses WHERE product='kkdik'").fetchone()[0],
+        "etanom_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-teklif'").fetchone()[0],
     }
-
-    logs = conn.execute(
-        "SELECT * FROM audit_log ORDER BY created_at DESC, id DESC LIMIT 25"
-    ).fetchall()
+    logs = conn.execute("SELECT * FROM audit_log ORDER BY created_at DESC, id DESC LIMIT 25").fetchall()
     conn.close()
-
-    return render_template_string(
-        PANEL_HTML,
-        licenses=licenses, stats=stats, now=now,
-        logs=logs, products=PRODUCTS, prod_filter=prod_filter,
-    )
+    return render_template_string(PANEL_HTML, licenses=licenses, stats=stats,
+                                  now=now, logs=logs, products=PRODUCTS, prod_filter=prod_filter)
 
 
 @app.route("/create", methods=["POST"])
 @auth
 def create():
-    hw_id    = request.form.get("hw_id", "").strip().upper()
-    days     = int(request.form.get("days", 365))
-    customer = request.form.get("customer_name", "").strip()
-    email    = request.form.get("customer_email", "").strip()
-    phone    = request.form.get("customer_phone", "").strip()
-    notes    = request.form.get("notes", "").strip()
-    package  = request.form.get("package", "enterprise").strip()
-    product  = request.form.get("product", "gazi-hr").strip()
-
+    hw_id    = request.form.get("hw_id","").strip().upper()
+    days     = int(request.form.get("days",365))
+    customer = request.form.get("customer_name","").strip()
+    email    = request.form.get("customer_email","").strip()
+    phone    = request.form.get("customer_phone","").strip()
+    notes    = request.form.get("notes","").strip()
+    package  = request.form.get("package","enterprise").strip()
+    product  = request.form.get("product","gazi-hr").strip()
     if product not in PRODUCTS:
         product = "gazi-hr"
     if not hw_id:
         return "Donanım ID gerekli", 400
-
     expires = (datetime.now() + timedelta(days=days)).isoformat()
     conn = get_db()
-    existing = conn.execute(
-        "SELECT id FROM licenses WHERE hw_id=? AND product=?", (hw_id, product)
-    ).fetchone()
-
+    existing = conn.execute("SELECT id FROM licenses WHERE hw_id=? AND product=?", (hw_id, product)).fetchone()
     if existing:
         conn.close()
         return "<script>alert('Bu HW ID ve ürün için zaten lisans var.');history.back()</script>"
-
     key = gen_key(hw_id, expires, product)
-
     try:
         conn.execute(
             "INSERT INTO licenses (license_key,hw_id,product,customer_name,customer_email,customer_phone,expires_at,notes,package) VALUES(?,?,?,?,?,?,?,?,?)",
@@ -335,7 +341,6 @@ def create():
     except sqlite3.IntegrityError:
         conn.close()
         return "<script>alert('Lisans oluşturulamadı.');history.back()</script>"
-
     conn.close()
     return redirect("/")
 
@@ -343,7 +348,7 @@ def create():
 @app.route("/extend/<int:lid>", methods=["POST"])
 @auth
 def extend(lid):
-    days = int(request.form.get("days", 365))
+    days = int(request.form.get("days",365))
     conn = get_db()
     lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
     if lic:
@@ -353,10 +358,8 @@ def extend(lid):
         new_exp = cur + timedelta(days=days)
         product = lic["product"] or "gazi-hr"
         new_key = gen_key(lic["hw_id"], new_exp.isoformat(), product)
-        conn.execute(
-            "UPDATE licenses SET license_key=?, expires_at=?, is_revoked=0, revoke_reason=NULL WHERE id=?",
-            (new_key, new_exp.isoformat(), lid),
-        )
+        conn.execute("UPDATE licenses SET license_key=?, expires_at=?, is_revoked=0, revoke_reason=NULL WHERE id=?",
+                     (new_key, new_exp.isoformat(), lid))
         conn.commit()
         log("LİSANS UZATILDI", f"ID:{lid} | {lic['customer_name'] or '-'} | +{days} gün | {new_exp.strftime('%d.%m.%Y')}")
     conn.close()
@@ -366,7 +369,7 @@ def extend(lid):
 @app.route("/revoke/<int:lid>", methods=["POST"])
 @auth
 def revoke(lid):
-    reason = request.form.get("reason", "").strip()
+    reason = request.form.get("reason","").strip()
     conn = get_db()
     lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
     conn.execute("UPDATE licenses SET is_revoked=1, revoke_reason=? WHERE id=?", (reason, lid))
@@ -394,7 +397,7 @@ def edit(lid):
     conn = get_db()
     lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
     if lic:
-        pkg = request.form.get("package", "enterprise").strip()
+        pkg = request.form.get("package","enterprise").strip()
         conn.execute(
             "UPDATE licenses SET customer_name=?, customer_email=?, customer_phone=?, notes=?, package=? WHERE id=?",
             (request.form.get("customer_name","").strip(), request.form.get("customer_email","").strip(),
@@ -418,57 +421,7 @@ def delete(lid):
     return redirect("/")
 
 
-# ── Doğrulama çekirdeği ──────────────────────────────────────────────────────
-
-def _verify_core(key: str, hw: str, product: str):
-    if product not in PRODUCTS:
-        return None, {"valid": False, "message": "Bilinmeyen ürün"}
-
-    conn = get_db()
-    lic = conn.execute(
-        "SELECT * FROM licenses WHERE license_key=? AND product=?", (key, product)
-    ).fetchone()
-
-    if not lic:
-        conn.close()
-        return None, {"valid": False, "message": "Lisans bulunamadı"}
-    if lic["is_revoked"]:
-        conn.close()
-        return None, {"valid": False, "message": f"İptal edildi: {lic['revoke_reason'] or ''}"}
-    if lic["hw_id"].upper() != hw.upper():
-        conn.close()
-        return None, {"valid": False, "message": "Donanım eşleşmiyor"}
-
-    exp = datetime.fromisoformat(lic["expires_at"])
-    if datetime.now() > exp:
-        conn.close()
-        return None, {"valid": False, "message": f"Süresi doldu ({exp.strftime('%d.%m.%Y')})"}
-
-    ok, math_msg = validate_key_math(lic["license_key"], lic["hw_id"], lic["expires_at"], lic["product"] or product)
-    if not ok:
-        conn.close()
-        return None, {"valid": False, "message": f"Algoritma uyuşmuyor: {math_msg}"}
-
-    conn.execute(
-        "UPDATE licenses SET last_seen=?, verify_count=verify_count+1 WHERE id=?",
-        (datetime.now().isoformat(), lic["id"]),
-    )
-    conn.commit()
-    conn.close()
-
-    days_left = (exp - datetime.now()).days
-    return lic, {
-        "valid":     True,
-        "expires":   exp.strftime("%d.%m.%Y"),
-        "customer":  lic["customer_name"],
-        "message":   "Geçerli",
-        "package":   lic["package"] or "enterprise",
-        "days_left": days_left,
-    }
-
-
-# ── API endpoint'leri ────────────────────────────────────────────────────────
-
+# ── API Endpoints ─────────────────────────────────────────────────────────────
 @app.route("/api/hr-license", methods=["POST"])
 def verify_hr():
     d = request.get_json(silent=True) or {}
@@ -493,31 +446,23 @@ def verify_eta():
     _, result = _verify_core(d.get("license_key","").strip().upper(), d.get("hw_id","").strip(), "eta-analitik")
     return jsonify(result)
 
-# ── YENİ: KKDİK Suite ────────────────────────────────────────────────────────
 @app.route("/api/kkdik-license", methods=["POST"])
 def verify_kkdik():
     d = request.get_json(silent=True) or {}
     _, result = _verify_core(d.get("license_key","").strip().upper(), d.get("hw_id","").strip(), "kkdik")
     return jsonify(result)
 
-@app.route("/api/debug-license-math", methods=["POST"])
-def debug_license_math():
+@app.route("/api/etanom-teklif-license", methods=["POST"])
+def verify_etanom():
     d = request.get_json(silent=True) or {}
-    key = d.get("license_key","").strip().upper()
-    hw  = d.get("hw_id","").strip().upper()
-    product    = d.get("product","").strip()
-    expires_at = d.get("expires_at","").strip()
-    if not all([key, hw, product, expires_at]):
-        return jsonify({"ok": False, "message": "license_key, hw_id, product, expires_at gerekli"}), 400
-    ok, msg = validate_key_math(key, hw, expires_at, product)
-    return jsonify({"ok": ok, "message": msg, "expected": gen_key(hw, expires_at, product) if product in PRODUCTS else None})
+    _, result = _verify_core(d.get("license_key","").strip().upper(), d.get("hw_id","").strip(), "etanom-teklif")
+    return jsonify(result)
 
 @app.route("/health")
 def health():
     return jsonify({"ok": True, "service": "license-panel"})
 
 
-# ── HTML şablonları ──────────────────────────────────────────────────────────
 
 LOGIN_HTML = """<!DOCTYPE html>
 <html lang="tr">
@@ -663,6 +608,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .orange{background:rgba(249,115,22,.16);color:#fdba74}
 .purple{background:rgba(139,92,246,.16);color:#c4b5fd}
 .cyan{background:rgba(6,182,212,.16);color:#67e8f9}
+.yellow{background:rgba(245,158,11,.16);color:#fde68a}
 .actions-row{display:flex;gap:6px;flex-wrap:wrap}
 .log{display:flex;flex-direction:column;gap:10px}
 .log-item{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05)}
@@ -692,13 +638,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <a href="/logout">Çıkış</a>
   </div>
 </nav>
-
 <div class="wrap">
   <div class="hero">
     <div class="hero-top">
       <div>
         <h2>Lisansları tek panelden yönet</h2>
-        <p>Gazi HR, AutoServis CRM, Fiyat Teklifi, ETA Analitik ve KKDİK Suite lisanslarını oluşturun, uzatın, iptal edin ve müşteri bazlı takip edin.</p>
+        <p>Gazi HR, AutoServis CRM, Fiyat Teklifi, ETA Analitik, KKDİK Suite ve Etanom Teklif lisanslarını oluşturun, uzatın, iptal edin ve müşteri bazlı takip edin.</p>
       </div>
       <div class="hero-meta">
         <div class="meta-box"><div class="k">Toplam Lisans</div><div class="v">{{ stats.total }}</div></div>
@@ -716,6 +661,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <a href="/?product=fiyat-teklifi"  class="tab {{ 'on' if prod_filter=='fiyat-teklifi' else '' }}">📊 Fiyat Teklifi ({{ stats.ft_count }})</a>
     <a href="/?product=eta-analitik"   class="tab {{ 'on' if prod_filter=='eta-analitik' else '' }}">🚢 ETA Analitik ({{ stats.eta_count }})</a>
     <a href="/?product=kkdik"          class="tab {{ 'on' if prod_filter=='kkdik' else '' }}">⚗️ KKDİK Suite ({{ stats.kkdik_count }})</a>
+    <a href="/?product=etanom-teklif"  class="tab {{ 'on' if prod_filter=='etanom-teklif' else '' }}">📄 Etanom Teklif ({{ stats.etanom_count }})</a>
   </div>
 
   <div class="stats">
@@ -741,6 +687,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
                   <option value="fiyat-teklifi">📊 Fiyat Teklifi</option>
                   <option value="eta-analitik">🚢 ETA Analitik ERP</option>
                   <option value="kkdik">⚗️ KKDİK Suite</option>
+                  <option value="etanom-teklif">📄 Etanom Teklif</option>
                 </select>
               </div>
               <div>
@@ -760,7 +707,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               </div>
               <div>
                 <label>Müşteri / Firma</label>
-                <input name="customer_name" placeholder="ABC Kimya A.Ş.">
+                <input name="customer_name" placeholder="ABC Ltd. Şti.">
               </div>
               <div>
                 <label>Paket</label>
@@ -819,19 +766,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
               {% set is_exp = l.expires_at < now %}
               {% set status = 'revoked' if l.is_revoked else ('expired' if is_exp else 'active') %}
               {% set prod = l.product or 'gazi-hr' %}
-              <tr data-s="{{ status }}" data-q="{{ ((l.customer_name or '')~' '~(l.customer_email or '')~' '~(l.customer_phone or '')~' '~l.license_key~' '~l.hw_id)|lower }}">
+              <tr data-s="{{ status }}" data-q="{{ ((l.customer_name or '')~' '~(l.customer_email or '')~' '~l.license_key~' '~l.hw_id)|lower }}">
                 <td>{{ l.id }}</td>
                 <td>
                   {% if prod=='autoservis-crm' %}<span class="pill orange">🔧 AutoServis</span>
                   {% elif prod=='fiyat-teklifi' %}<span class="pill green">📊 Fiyat Teklifi</span>
                   {% elif prod=='eta-analitik' %}<span class="pill purple">🚢 ETA Analitik</span>
                   {% elif prod=='kkdik' %}<span class="pill cyan">⚗️ KKDİK Suite</span>
+                  {% elif prod=='etanom-teklif' %}<span class="pill yellow">📄 Etanom Teklif</span>
                   {% else %}<span class="pill blue">👥 Gazi HR</span>{% endif %}
                 </td>
                 <td>
                   <div style="font-weight:700">{{ l.customer_name or '-' }}</div>
                   {% if l.customer_email %}<div style="font-size:11px;color:var(--muted)">{{ l.customer_email }}</div>{% endif %}
-                  {% if l.customer_phone %}<div style="font-size:11px;color:var(--muted)">{{ l.customer_phone }}</div>{% endif %}
                 </td>
                 <td>
                   {% if l.package=='starter' %}<span class="pill blue">Başlangıç</span>
@@ -914,7 +861,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </div>
   </div>
 </div>
-
 <div id="duz{{ l.id }}" class="modal" onclick="if(event.target===this)closeM('duz{{ l.id }}')">
   <div class="modal-box">
     <div class="modal-head"><h4>Lisansı Düzenle</h4><button class="modal-close" type="button" onclick="closeM('duz{{ l.id }}')">&times;</button></div>
@@ -935,7 +881,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </div>
   </div>
 </div>
-
 {% if not l.is_revoked %}
 <div id="ipt{{ l.id }}" class="modal" onclick="if(event.target===this)closeM('ipt{{ l.id }}')">
   <div class="modal-box">
@@ -943,7 +888,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="modal-body">
       <form method="POST" action="/revoke/{{ l.id }}">
         <label>İptal Sebebi</label>
-        <textarea name="reason" placeholder="Ödeme yapılmadı, iptal talebi geldi..."></textarea>
+        <textarea name="reason" placeholder="Ödeme yapılmadı, iptal talebi..."></textarea>
         <div class="actions"><button class="btn btn-orange" type="submit">İptal Et</button></div>
       </form>
     </div>
@@ -953,7 +898,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
 {% endfor %}
 
 <div class="toast" id="toast">Kopyalandı</div>
-
 <script>
 let cf='all';
 function setF(f,btn){cf=f;document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');flt();}
@@ -970,3 +914,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     print(f"Gazi Medya Lisans Paneli basliyor - port {port}")
     app.run(host="0.0.0.0", port=port, debug=False)
+
