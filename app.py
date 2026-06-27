@@ -100,6 +100,11 @@ _K_ETNTK = [
     116,101,109,105,50,48,50,54,71,97,122,105,77,101,100,105,
     97,83,101,99,114,101,116,75,101,121
 ]
+_K_ETNFT = [
+    69,116,97,110,111,109,70,97,116,117,114,97,83,105,115,116,
+    101,109,105,50,48,50,54,71,97,122,105,77,101,100,105,97,83,
+    101,99,114,101,116,75,101,121
+]
 
 PRODUCTS = {
     "gazi-hr":        {"prefix":"GMHR",  "key":_K_HR,    "label":"Gazi HR",          "color":"#3b82f6","emoji":"👥"},
@@ -108,6 +113,7 @@ PRODUCTS = {
     "eta-analitik":   {"prefix":"ETADK", "key":_K_ETA,   "label":"ETA Analitik ERP", "color":"#8b5cf6","emoji":"🚢"},
     "kkdik":          {"prefix":"KKDIK", "key":_K_KKDIK, "label":"KKDİK Suite",      "color":"#06b6d4","emoji":"⚗️"},
     "etanom-teklif":  {"prefix":"ETNTK", "key":_K_ETNTK, "label":"Etanom Teklif",   "color":"#f59e0b","emoji":"📄"},
+    "etanom-fatura":  {"prefix":"ETNFT", "key":_K_ETNFT, "label":"Etanom Fatura (İhracat)", "color":"#dc2626","emoji":"🧾"},
 }
 
 
@@ -302,6 +308,7 @@ def index():
         "eta_count":     conn.execute("SELECT COUNT(*) FROM licenses WHERE product='eta-analitik'").fetchone()[0],
         "kkdik_count":   conn.execute("SELECT COUNT(*) FROM licenses WHERE product='kkdik'").fetchone()[0],
         "etanom_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-teklif'").fetchone()[0],
+        "fatura_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-fatura'").fetchone()[0],
     }
     logs = conn.execute("SELECT * FROM audit_log ORDER BY created_at DESC, id DESC LIMIT 25").fetchall()
     conn.close()
@@ -456,6 +463,12 @@ def verify_kkdik():
 def verify_etanom():
     d = request.get_json(silent=True) or {}
     _, result = _verify_core(d.get("license_key","").strip().upper(), d.get("hw_id","").strip(), "etanom-teklif")
+    return jsonify(result)
+
+@app.route("/api/etanom-fatura-license", methods=["POST"])
+def verify_etanom_fatura():
+    d = request.get_json(silent=True) or {}
+    _, result = _verify_core(d.get("license_key","").strip().upper(), d.get("hw_id","").strip(), "etanom-fatura")
     return jsonify(result)
 
 @app.route("/health")
@@ -643,7 +656,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="hero-top">
       <div>
         <h2>Lisansları tek panelden yönet</h2>
-        <p>Gazi HR, AutoServis CRM, Fiyat Teklifi, ETA Analitik, KKDİK Suite ve Etanom Teklif lisanslarını oluşturun, uzatın, iptal edin ve müşteri bazlı takip edin.</p>
+        <p>Gazi HR, AutoServis CRM, Fiyat Teklifi, ETA Analitik, KKDİK Suite, Etanom Teklif ve Etanom Fatura (İhracat) lisanslarını oluşturun, uzatın, iptal edin ve müşteri bazlı takip edin.</p>
       </div>
       <div class="hero-meta">
         <div class="meta-box"><div class="k">Toplam Lisans</div><div class="v">{{ stats.total }}</div></div>
@@ -662,6 +675,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <a href="/?product=eta-analitik"   class="tab {{ 'on' if prod_filter=='eta-analitik' else '' }}">🚢 ETA Analitik ({{ stats.eta_count }})</a>
     <a href="/?product=kkdik"          class="tab {{ 'on' if prod_filter=='kkdik' else '' }}">⚗️ KKDİK Suite ({{ stats.kkdik_count }})</a>
     <a href="/?product=etanom-teklif"  class="tab {{ 'on' if prod_filter=='etanom-teklif' else '' }}">📄 Etanom Teklif ({{ stats.etanom_count }})</a>
+    <a href="/?product=etanom-fatura"  class="tab {{ 'on' if prod_filter=='etanom-fatura' else '' }}">🧾 Etanom Fatura ({{ stats.fatura_count }})</a>
   </div>
 
   <div class="stats">
@@ -688,6 +702,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
                   <option value="eta-analitik">🚢 ETA Analitik ERP</option>
                   <option value="kkdik">⚗️ KKDİK Suite</option>
                   <option value="etanom-teklif">📄 Etanom Teklif</option>
+                  <option value="etanom-fatura">🧾 Etanom Fatura (İhracat)</option>
                 </select>
               </div>
               <div>
@@ -774,6 +789,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
                   {% elif prod=='eta-analitik' %}<span class="pill purple">🚢 ETA Analitik</span>
                   {% elif prod=='kkdik' %}<span class="pill cyan">⚗️ KKDİK Suite</span>
                   {% elif prod=='etanom-teklif' %}<span class="pill yellow">📄 Etanom Teklif</span>
+                  {% elif prod=='etanom-fatura' %}<span class="pill red">🧾 Etanom Fatura</span>
                   {% else %}<span class="pill blue">👥 Gazi HR</span>{% endif %}
                 </td>
                 <td>
@@ -914,4 +930,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     print(f"Gazi Medya Lisans Paneli basliyor - port {port}")
     app.run(host="0.0.0.0", port=port, debug=False)
-
