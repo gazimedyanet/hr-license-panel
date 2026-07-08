@@ -495,20 +495,21 @@ LOGIN_HTML = """<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#f1f3f7;--card:#fff;--line:#e2e5ec;--text:#0f172a;--muted:#64748b;--accent:#4f46e5;--accent-d:#4338ca;--danger:#dc2626;--danger-bg:#fef2f2}
+html,body{overflow-x:hidden}
+:root{--bg:#f4f5f7;--card:#ffffff;--line:#e3e6ec;--text:#111827;--muted:#6b7280;--accent:#4f46e5;--accent-d:#4338ca;--danger:#dc2626;--danger-bg:#fef2f2}
 body{min-height:100vh;background:var(--bg);font-family:'Inter',Segoe UI,system-ui,sans-serif;color:var(--text);display:flex;align-items:center;justify-content:center;padding:24px}
-.card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:38px 34px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 32px rgba(15,23,42,.08)}
-.logo{width:46px;height:46px;border-radius:13px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:22px;box-shadow:0 8px 20px rgba(79,70,229,.28)}
-h1{font-size:21px;font-weight:800;letter-spacing:-.01em;margin-bottom:5px}
-.sub{color:var(--muted);font-size:13.5px;margin-bottom:28px}
-.err{background:var(--danger-bg);border:1px solid #fecaca;color:var(--danger);border-radius:11px;padding:11px 14px;margin-bottom:18px;font-size:13px;font-weight:500}
-label{display:block;font-size:12.5px;font-weight:600;color:#334155;margin-bottom:7px}
+.card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:36px 32px;box-shadow:0 1px 2px rgba(17,24,39,.03),0 10px 28px rgba(17,24,39,.06)}
+.logo{width:44px;height:44px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:20px}
+h1{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
+.sub{color:var(--muted);font-size:13.5px;margin-bottom:26px}
+.err{background:var(--danger-bg);border:1px solid #fecaca;color:var(--danger);border-radius:10px;padding:11px 14px;margin-bottom:18px;font-size:13px;font-weight:500}
+label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px}
 .field{margin-bottom:16px}
-input{width:100%;background:#fff;border:1.5px solid #d8dce4;color:var(--text);border-radius:10px;padding:11px 14px;font-size:14px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s}
-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.13)}
-button{width:100%;border:none;border-radius:10px;padding:12px 16px;margin-top:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;box-shadow:0 10px 24px rgba(79,70,229,.3)}
+input{width:100%;background:#fff;border:1.5px solid #d5d9e0;color:var(--text);border-radius:9px;padding:10px 13px;font-size:14px;outline:none;font-family:inherit;transition:border-color .12s,box-shadow .12s}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.12)}
+button{width:100%;border:none;border-radius:9px;padding:11px 16px;margin-top:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .12s}
 button:hover{background:var(--accent-d)}
-.foot{text-align:center;color:#94a3b8;font-size:11.5px;margin-top:24px}
+.foot{text-align:center;color:#9aa2b1;font-size:11.5px;margin-top:22px}
 </style></head>
 <body>
 <div class="card">
@@ -534,29 +535,30 @@ CHANGE_PASS_HTML = """<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#f1f3f7;--card:#fff;--line:#e2e5ec;--text:#0f172a;--muted:#64748b;--accent:#4f46e5;--accent-d:#4338ca;--ok:#15803d;--ok-bg:#f0fdf4;--danger:#dc2626;--danger-bg:#fef2f2}
+html,body{overflow-x:hidden}
+:root{--bg:#f4f5f7;--card:#ffffff;--line:#e3e6ec;--text:#111827;--muted:#6b7280;--accent:#4f46e5;--accent-d:#4338ca;--ok:#15803d;--ok-bg:#f0fdf4;--danger:#dc2626;--danger-bg:#fef2f2}
 body{min-height:100vh;background:var(--bg);font-family:'Inter',Segoe UI,system-ui,sans-serif;color:var(--text)}
-nav{height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;background:#111827;position:sticky;top:0;z-index:10}
-.brand{font-weight:700;font-size:14.5px;color:#fff;display:flex;align-items:center;gap:9px}
-.brand::before{content:"🔐"}
-.nav-links a{color:#94a3b8;text-decoration:none;margin-left:18px;font-size:13.5px;font-weight:600}
-.nav-links a:hover{color:#fff}
-.wrap{max-width:480px;margin:60px auto;padding:0 20px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:32px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 32px rgba(15,23,42,.08)}
-h1{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
-.sub{color:var(--muted);font-size:13.5px;margin-bottom:26px}
-.ok{padding:11px 14px;border-radius:11px;margin-bottom:18px;font-size:13px;font-weight:500;background:var(--ok-bg);border:1px solid #bbf7d0;color:var(--ok)}
-.er{padding:11px 14px;border-radius:11px;margin-bottom:18px;font-size:13px;font-weight:500;background:var(--danger-bg);border:1px solid #fecaca;color:var(--danger)}
-label{display:block;font-size:12.5px;font-weight:600;color:#334155;margin-bottom:7px}
+nav{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.brand{font-weight:700;font-size:14px;color:var(--text);display:flex;align-items:center;gap:9px}
+.brand .b{width:26px;height:26px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px}
+.nav-links a{color:var(--muted);text-decoration:none;margin-left:18px;font-size:13.5px;font-weight:600}
+.nav-links a:hover{color:var(--text)}
+.wrap{max-width:480px;margin:56px auto;padding:0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 1px 2px rgba(17,24,39,.03),0 10px 28px rgba(17,24,39,.06)}
+h1{font-size:19px;font-weight:800;letter-spacing:-.01em;margin-bottom:5px}
+.sub{color:var(--muted);font-size:13.5px;margin-bottom:24px}
+.ok{padding:11px 14px;border-radius:10px;margin-bottom:18px;font-size:13px;font-weight:500;background:var(--ok-bg);border:1px solid #bbf7d0;color:var(--ok)}
+.er{padding:11px 14px;border-radius:10px;margin-bottom:18px;font-size:13px;font-weight:500;background:var(--danger-bg);border:1px solid #fecaca;color:var(--danger)}
+label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px}
 .field{margin-bottom:16px}
-input{width:100%;background:#fff;border:1.5px solid #d8dce4;color:var(--text);border-radius:10px;padding:11px 14px;font-size:14px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s}
-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.13)}
-button{width:100%;border:none;border-radius:10px;padding:12px 16px;margin-top:6px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;box-shadow:0 10px 24px rgba(79,70,229,.3)}
+input{width:100%;background:#fff;border:1.5px solid #d5d9e0;color:var(--text);border-radius:9px;padding:10px 13px;font-size:14px;outline:none;font-family:inherit;transition:border-color .12s,box-shadow .12s}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.12)}
+button{width:100%;border:none;border-radius:9px;padding:11px 16px;margin-top:6px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .12s}
 button:hover{background:var(--accent-d)}
 </style></head>
 <body>
 <nav>
-  <div class="brand">Gazi Medya</div>
+  <div class="brand"><div class="b">🔐</div>Gazi Medya</div>
   <div class="nav-links"><a href="/">Panele Dön</a><a href="/logout">Çıkış</a></div>
 </nav>
 <div class="wrap"><div class="card">
@@ -582,11 +584,12 @@ PANEL_HTML = """<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden;width:100%}
 :root{
-  --bg:#f1f3f7;--card:#ffffff;--line:#e2e5ec;--line2:#cbd2de;
-  --text:#0f172a;--muted:#64748b;--muted2:#94a3b8;
+  --bg:#f4f5f7;--card:#ffffff;--line:#e3e6ec;--line2:#d5d9e0;
+  --text:#111827;--muted:#6b7280;--muted2:#9aa2b1;
   --accent:#4f46e5;--accent-d:#4338ca;--accent-bg:#eef0ff;
-  --side-bg:#111827;--side-bg2:#0b1120;--side-line:#1f2937;--side-text:#cbd5e1;--side-muted:#7c8aa0;
+  --side-bg:#fbfbfc;--side-line:#e3e6ec;
   --green:#15803d;--green-bg:#f0fdf4;--green-bd:#bbf7d0;
   --amber:#b45309;--amber-bg:#fffbeb;--amber-bd:#fde68a;
   --red:#dc2626;--red-bg:#fef2f2;--red-bd:#fecaca;
@@ -595,83 +598,87 @@ PANEL_HTML = """<!DOCTYPE html>
   --purple:#6d28d9;--purple-bg:#f5f3ff;--purple-bd:#ddd6fe;
   --cyan:#0e7490;--cyan-bg:#ecfeff;--cyan-bd:#a5f3fc;
   --yellow:#a16207;--yellow-bg:#fefce8;--yellow-bd:#fde047;
-  --radius:14px;--sidebar-w:248px
+  --radius:14px;--sidebar-w:236px
 }
-html{scrollbar-color:#cbd2de transparent}
-::-webkit-scrollbar{height:10px;width:10px}
-::-webkit-scrollbar-thumb{background:#cbd2de;border-radius:8px}
+html{scrollbar-color:#d5d9e0 transparent}
+::-webkit-scrollbar{height:9px;width:9px}
+::-webkit-scrollbar-thumb{background:#d5d9e0;border-radius:8px}
 body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Inter',Segoe UI,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-.shell{display:flex;min-height:100vh}
+.shell{display:flex;min-height:100vh;min-width:0}
 
-/* ── Sidebar (koyu, sabit) ───────────────────────────── */
-.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--side-bg);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
-.side-brand{display:flex;align-items:center;gap:11px;padding:22px 20px 20px;border-bottom:1px solid var(--side-line)}
-.side-brand .b{width:36px;height:36px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px}
-.side-brand h1{font-size:14.5px;font-weight:700;color:#fff;letter-spacing:-.01em}
-.side-brand small{display:block;color:var(--side-muted);font-size:10.5px;margin-top:1px;font-weight:500}
-.side-section{padding:16px 14px 6px}
-.side-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--side-muted);padding:0 10px 10px}
-.nav-link{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--side-text);text-decoration:none;font-size:13px;font-weight:600;padding:9px 12px;border-radius:9px;margin-bottom:2px;transition:background .15s,color .15s}
-.nav-link:hover{background:rgba(255,255,255,.06);color:#fff}
-.nav-link.on{background:var(--accent);color:#fff}
-.nav-link .lbl{display:flex;align-items:center;gap:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nav-link .cnt{background:rgba(255,255,255,.12);font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;flex-shrink:0}
-.nav-link.on .cnt{background:rgba(255,255,255,.22)}
+/* ── Sidebar (açık) ──────────────────────────────────── */
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--side-bg);border-right:1px solid var(--side-line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.side-brand{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid var(--side-line)}
+.side-brand .b{width:32px;height:32px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.side-brand h1{font-size:13.5px;font-weight:700;letter-spacing:-.01em}
+.side-brand small{display:block;color:var(--muted2);font-size:10.5px;margin-top:1px;font-weight:500}
+.side-section{padding:14px 12px 6px}
+.side-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);padding:0 8px 8px}
+.nav-link{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#374151;text-decoration:none;font-size:12.5px;font-weight:600;padding:8px 10px;border-radius:8px;margin-bottom:2px;transition:background .12s,color .12s}
+.nav-link:hover{background:#f1f2f5}
+.nav-link.on{background:var(--accent-bg);color:var(--accent-d)}
+.nav-link .lbl{display:flex;align-items:center;gap:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.nav-link .cnt{background:#e9eaee;color:var(--muted);font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;flex-shrink:0}
+.nav-link.on .cnt{background:#dfe1ff;color:var(--accent-d)}
 .side-spacer{flex:1}
-.side-foot{padding:14px;border-top:1px solid var(--side-line)}
-.side-foot a{display:flex;align-items:center;gap:9px;color:var(--side-text);text-decoration:none;font-size:13px;font-weight:600;padding:9px 12px;border-radius:9px;transition:background .15s,color .15s}
-.side-foot a:hover{background:rgba(255,255,255,.06);color:#fff}
+.side-foot{padding:12px;border-top:1px solid var(--side-line)}
+.side-foot a{display:flex;align-items:center;gap:8px;color:#374151;text-decoration:none;font-size:12.5px;font-weight:600;padding:8px 10px;border-radius:8px;transition:background .12s}
+.side-foot a:hover{background:#f1f2f5}
 
 /* ── İçerik ──────────────────────────────────────────── */
-.main{flex:1;min-width:0;padding:26px 30px 44px}
-.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:22px}
-.topbar h2{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:5px;display:flex;align-items:center;gap:9px}
-.topbar p{color:var(--muted);font-size:13.5px;max-width:600px;line-height:1.55}
-.btn{border:none;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:filter .15s,transform .15s;white-space:nowrap}
+.main{flex:1;min-width:0;padding:24px 28px 40px;max-width:100%}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.topbar h2{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.topbar p{color:var(--muted);font-size:13px;max-width:600px;line-height:1.5}
+.btn{border:none;border-radius:9px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:filter .12s,transform .12s;white-space:nowrap}
 .btn:hover{filter:brightness(.94)}
 .btn:active{transform:translateY(1px)}
-.btn-main{background:var(--accent);box-shadow:0 8px 20px rgba(79,70,229,.28)}
+.btn-main{background:var(--accent)}
 .btn-green{background:#16a34a}
 .btn-orange{background:#ea580c}
 .btn-red{background:#dc2626}
-.btn-muted{background:#64748b}
-.btn-xs{padding:7px 11px;font-size:11.5px;border-radius:8px;box-shadow:none}
+.btn-muted{background:#6b7280}
+.btn-xs{padding:6px 10px;font-size:11px;border-radius:7px}
 
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:10px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
-.stat .k{color:var(--muted);font-size:11.5px;margin-bottom:8px;font-weight:600}
-.stat .v{font-size:26px;font-weight:800;letter-spacing:-.01em}
-.stats-note{font-size:11.5px;color:var(--muted2);margin-bottom:22px}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;min-width:0}
+.stat .k{color:var(--muted);font-size:11px;margin-bottom:7px;font-weight:600}
+.stat .v{font-size:23px;font-weight:800;letter-spacing:-.01em}
+.stats-note{font-size:11px;color:var(--muted2);margin-bottom:20px}
 
-.grid{display:grid;grid-template-columns:1.12fr .88fr;gap:18px;align-items:start}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.03)}
-.card-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
-.card-head h3{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
-.card-body{padding:20px}
-.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:16px;align-items:start;min-width:0}
+.grid>div{min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 2px rgba(17,24,39,.03);min-width:0}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.card-head h3{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+.card-body{padding:18px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
 .full{grid-column:1/-1}
-label{display:block;font-size:12.5px;font-weight:600;color:#334155;margin-bottom:7px}
-input,select,textarea{width:100%;background:#fff;border:1.5px solid #d8dce4;color:var(--text);border-radius:10px;padding:10px 13px;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px}
+input,select,textarea{width:100%;background:#fff;border:1.5px solid #d5d9e0;color:var(--text);border-radius:9px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;transition:border-color .12s,box-shadow .12s}
 select,option{background:#fff;color:var(--text)}
-textarea{min-height:80px;resize:vertical}
-input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.13)}
-.actions{margin-top:16px;display:flex;justify-content:flex-end;gap:10px}
+textarea{min-height:76px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.12)}
+.actions{margin-top:15px;display:flex;justify-content:flex-end;gap:9px}
 
-.table-wrap{overflow:auto}
-.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid var(--line)}
-.search{min-width:220px;flex:1;background:#fff;border:1.5px solid #d8dce4;border-radius:10px;color:var(--text);padding:9px 13px;font-size:13px;outline:none}
-.search:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.13)}
-.filter-tabs{display:flex;gap:6px;flex-wrap:wrap}
-.ftab{border:1px solid var(--line2);background:#fff;color:var(--muted);border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s}
+.table-wrap{overflow-x:auto;max-width:100%}
+.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line)}
+.search{min-width:180px;flex:1;background:#fff;border:1.5px solid #d5d9e0;border-radius:9px;color:var(--text);padding:8px 12px;font-size:12.5px;outline:none}
+.search:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.12)}
+.filter-tabs{display:flex;gap:5px;flex-wrap:wrap}
+.ftab{border:1px solid var(--line2);background:#fff;color:var(--muted);border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;transition:all .12s}
 .ftab:hover{background:#f8fafc}
 .ftab.on{color:#fff;background:var(--accent);border-color:var(--accent)}
-table{width:100%;border-collapse:collapse}
-th,td{padding:11px 14px;border-bottom:1px solid var(--line);text-align:left;font-size:12.5px;white-space:nowrap;vertical-align:top}
-th{color:var(--muted);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;background:#f8fafc}
-tbody tr:hover td{background:#f8faff}
-.kbox{display:inline-flex;align-items:center;gap:6px;max-width:200px;overflow:hidden;text-overflow:ellipsis;padding:6px 9px;border-radius:8px;background:#f1f3f7;border:1px solid var(--line);font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;cursor:pointer;font-size:11px;transition:background .15s,border-color .15s}
+table{width:100%;border-collapse:collapse;table-layout:auto}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:middle}
+th{color:var(--muted);font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;background:#fafafb;white-space:nowrap}
+tbody tr:hover td{background:#fafbff}
+td.col-id{width:44px;color:var(--muted2)}
+td.col-cust{max-width:150px}
+.custname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.kbox{display:inline-flex;align-items:center;gap:5px;max-width:190px;overflow:hidden;text-overflow:ellipsis;padding:6px 9px;border-radius:7px;background:#f1f2f5;border:1px solid var(--line);font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;cursor:pointer;font-size:10.5px;white-space:nowrap;transition:background .12s,border-color .12s}
 .kbox:hover{background:var(--accent-bg);border-color:#c7d2fe}
-.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:10.5px;font-weight:700}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}
 .green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
 .amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}
 .red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
@@ -680,29 +687,33 @@ tbody tr:hover td{background:#f8faff}
 .purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-bd)}
 .cyan{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan-bd)}
 .yellow{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-bd)}
-.actions-row{display:flex;gap:5px;flex-wrap:wrap}
+.actions-row{display:flex;gap:4px;flex-wrap:nowrap}
 
-.log{display:flex;flex-direction:column;gap:9px}
-.log-item{padding:12px 14px;border-radius:11px;background:#f8fafc;border:1px solid var(--line);border-left:3px solid var(--accent)}
-.log-item strong{display:block;margin-bottom:3px;font-size:12.5px;font-weight:700}
-.log-item div{font-size:12px;color:#475569;margin-bottom:3px}
-.log-item small{color:var(--muted2);font-size:11px}
+.log{display:flex;flex-direction:column;gap:8px}
+.log-item{padding:11px 13px;border-radius:10px;background:#fafafb;border:1px solid var(--line);border-left:3px solid var(--accent);min-width:0}
+.log-item strong{display:block;margin-bottom:3px;font-size:12px;font-weight:700}
+.log-item div{font-size:11.5px;color:#4b5563;margin-bottom:3px;word-break:break-word}
+.log-item small{color:var(--muted2);font-size:10.5px}
 
-.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;z-index:999;padding:16px}
+.modal{position:fixed;inset:0;background:rgba(17,24,39,.45);display:none;align-items:center;justify-content:center;z-index:999;padding:16px}
 .modal.open{display:flex}
-.modal-box{width:100%;max-width:460px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 70px rgba(15,23,42,.3);overflow:hidden;max-height:90vh;display:flex;flex-direction:column}
-.modal-head{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.modal-head h4{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px}
-.modal-close{border:none;background:#f1f3f7;color:var(--muted);font-size:17px;cursor:pointer;width:27px;height:27px;border-radius:8px;line-height:1}
-.modal-close:hover{background:#e2e5ec;color:var(--text)}
-.modal-body{padding:20px;overflow-y:auto}
+.modal-box{width:100%;max-width:440px;background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:0 22px 64px rgba(17,24,39,.28);overflow:hidden;max-height:88vh;display:flex;flex-direction:column}
+.modal-head{padding:16px 19px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-head h4{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
+.modal-close{border:none;background:#f1f2f5;color:var(--muted);font-size:16px;cursor:pointer;width:26px;height:26px;border-radius:7px;line-height:1}
+.modal-close:hover{background:#e3e6ec;color:var(--text)}
+.modal-body{padding:19px;overflow-y:auto}
+.info-row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.info-row:last-child{border-bottom:none}
+.info-row .ik{color:var(--muted);font-weight:600;flex-shrink:0}
+.info-row .iv{text-align:right;font-weight:600;word-break:break-word}
 
-.toast{position:fixed;right:20px;bottom:20px;z-index:1200;background:#0f172a;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
+.toast{position:fixed;right:18px;bottom:18px;z-index:1200;background:#111827;color:#fff;padding:10px 15px;border-radius:9px;font-size:12.5px;font-weight:600;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
-.note{font-size:12px;color:var(--muted)}
-@media(max-width:1180px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+.note{font-size:11.5px;color:var(--muted)}
+@media(max-width:1180px){.grid{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.sidebar{display:none}}
-@media(max-width:740px){.main{padding:18px}.stats{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
+@media(max-width:740px){.main{padding:16px}.stats{grid-template-columns:minmax(0,1fr)}.form-grid{grid-template-columns:minmax(0,1fr)}}
 </style></head>
 <body>
 <div class="shell">
@@ -776,10 +787,7 @@ tbody tr:hover td{background:#f8faff}
             <table>
               <thead>
                 <tr>
-                  <th>ID</th><th>Ürün</th><th>Müşteri</th><th>Paket</th>
-                  <th>Lisans Anahtarı</th><th>HW ID</th>
-                  <th>Son Geçerlilik</th><th>Son Görülme</th><th>Kullanım</th>
-                  <th>Durum</th><th>İşlemler</th>
+                  <th>ID</th><th>Müşteri</th><th>HW ID</th><th>Lisans Anahtarı</th><th>Durum</th><th>İşlemler</th>
                 </tr>
               </thead>
               <tbody>
@@ -788,33 +796,10 @@ tbody tr:hover td{background:#f8faff}
                 {% set status = 'revoked' if l.is_revoked else ('expired' if is_exp else 'active') %}
                 {% set prod = l.product or 'gazi-hr' %}
                 <tr data-s="{{ status }}" data-q="{{ ((l.customer_name or '')~' '~(l.customer_email or '')~' '~l.license_key~' '~l.hw_id)|lower }}">
-                  <td>{{ l.id }}</td>
-                  <td>
-                    {% if prod=='autoservis-crm' %}<span class="pill orange">🔧 AutoServis</span>
-                    {% elif prod=='fiyat-teklifi' %}<span class="pill green">📊 Fiyat Teklifi</span>
-                    {% elif prod=='eta-analitik' %}<span class="pill purple">🚢 ETA Analitik</span>
-                    {% elif prod=='kkdik' %}<span class="pill cyan">⚗️ KKDİK Suite</span>
-                    {% elif prod=='etanom-teklif' %}<span class="pill yellow">📄 Etanom Teklif</span>
-                    {% elif prod=='etanom-fatura' %}<span class="pill red">🧾 Etanom Fatura</span>
-                    {% else %}<span class="pill blue">👥 Gazi HR</span>{% endif %}
-                  </td>
-                  <td>
-                    <div style="font-weight:600">{{ l.customer_name or '-' }}</div>
-                    {% if l.customer_email %}<div style="font-size:11px;color:var(--muted)">{{ l.customer_email }}</div>{% endif %}
-                  </td>
-                  <td>
-                    {% if l.package=='starter' %}<span class="pill blue">Başlangıç</span>
-                    {% elif l.package=='standard' %}<span class="pill purple">Standart</span>
-                    {% else %}<span class="pill amber">Kurumsal</span>{% endif %}
-                  </td>
-                  <td><span class="kbox" onclick="copyText('{{ l.license_key }}')">{{ l.license_key }}</span></td>
-                  <td><span class="kbox" onclick="copyText('{{ l.hw_id }}')">{{ l.hw_id }}</span></td>
-                  <td>{{ l.expires_at[:10] }}</td>
-                  <td>
-                    {% if l.last_seen %}{{ l.last_seen[:10] }}<br><span style="color:var(--muted);font-size:11px">{{ l.last_seen[11:16] }}</span>
-                    {% else %}<span style="color:var(--muted)">Henüz yok</span>{% endif %}
-                  </td>
-                  <td>{{ l.verify_count or 0 }}</td>
+                  <td class="col-id">{{ l.id }}</td>
+                  <td class="col-cust"><span class="custname" title="{{ l.customer_name or '-' }}">{{ l.customer_name or '-' }}</span></td>
+                  <td><span class="kbox" onclick="copyText('{{ l.hw_id }}')" title="Kopyala">{{ l.hw_id }}</span></td>
+                  <td><span class="kbox" onclick="copyText('{{ l.license_key }}')" title="Kopyala">{{ l.license_key }}</span></td>
                   <td>
                     {% if l.is_revoked %}<span class="pill red">İptal</span>
                     {% elif is_exp %}<span class="pill amber">Dolmuş</span>
@@ -822,6 +807,7 @@ tbody tr:hover td{background:#f8faff}
                   </td>
                   <td>
                     <div class="actions-row">
+                      <button class="btn btn-muted btn-xs" type="button" onclick="openM('detay{{ l.id }}')">Detay</button>
                       <button class="btn btn-green btn-xs" type="button" onclick="openM('uzat{{ l.id }}')">Uzat</button>
                       <button class="btn btn-main btn-xs" type="button" onclick="openM('duz{{ l.id }}')">Düzenle</button>
                       {% if not l.is_revoked %}
@@ -838,7 +824,7 @@ tbody tr:hover td{background:#f8faff}
                   </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="11" style="padding:32px;color:var(--muted)">Henüz lisans kaydı yok.</td></tr>
+                <tr><td colspan="6" style="padding:32px;color:var(--muted)">Henüz lisans kaydı yok.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -936,6 +922,34 @@ tbody tr:hover td{background:#f8faff}
 </div>
 
 {% for l in licenses %}
+{% set prod = l.product or 'gazi-hr' %}
+<div id="detay{{ l.id }}" class="modal" onclick="if(event.target===this)closeM('detay{{ l.id }}')">
+  <div class="modal-box">
+    <div class="modal-head"><h4>Lisans Detayı · #{{ l.id }}</h4><button class="modal-close" type="button" onclick="closeM('detay{{ l.id }}')">&times;</button></div>
+    <div class="modal-body">
+      <div class="info-row"><div class="ik">Ürün</div><div class="iv">
+        {% if prod=='autoservis-crm' %}🔧 AutoServis CRM
+        {% elif prod=='fiyat-teklifi' %}📊 Fiyat Teklifi
+        {% elif prod=='eta-analitik' %}🚢 ETA Analitik ERP
+        {% elif prod=='kkdik' %}⚗️ KKDİK Suite
+        {% elif prod=='etanom-teklif' %}📄 Etanom Teklif
+        {% elif prod=='etanom-fatura' %}🧾 Etanom Fatura (İhracat)
+        {% else %}👥 Gazi HR{% endif %}
+      </div></div>
+      <div class="info-row"><div class="ik">Müşteri / Firma</div><div class="iv">{{ l.customer_name or '-' }}</div></div>
+      <div class="info-row"><div class="ik">E-posta</div><div class="iv">{{ l.customer_email or '-' }}</div></div>
+      <div class="info-row"><div class="ik">Telefon</div><div class="iv">{{ l.customer_phone or '-' }}</div></div>
+      <div class="info-row"><div class="ik">Paket</div><div class="iv">
+        {% if l.package=='starter' %}Başlangıç{% elif l.package=='standard' %}Standart{% else %}Kurumsal{% endif %}
+      </div></div>
+      <div class="info-row"><div class="ik">Son Geçerlilik</div><div class="iv">{{ l.expires_at[:10] }}</div></div>
+      <div class="info-row"><div class="ik">Son Görülme</div><div class="iv">{{ l.last_seen[:16].replace('T',' ') if l.last_seen else 'Henüz yok' }}</div></div>
+      <div class="info-row"><div class="ik">Doğrulama Sayısı</div><div class="iv">{{ l.verify_count or 0 }}</div></div>
+      <div class="info-row"><div class="ik">Not</div><div class="iv">{{ l.notes or '-' }}</div></div>
+      {% if l.is_revoked %}<div class="info-row"><div class="ik">İptal Sebebi</div><div class="iv">{{ l.revoke_reason or '-' }}</div></div>{% endif %}
+    </div>
+  </div>
+</div>
 <div id="uzat{{ l.id }}" class="modal" onclick="if(event.target===this)closeM('uzat{{ l.id }}')">
   <div class="modal-box">
     <div class="modal-head"><h4>Süre Uzat</h4><button class="modal-close" type="button" onclick="closeM('uzat{{ l.id }}')">&times;</button></div>
