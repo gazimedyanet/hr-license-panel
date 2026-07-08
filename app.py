@@ -621,6 +621,13 @@ body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Inter'
 .nav-link .cnt{background:#e9eaee;color:var(--muted);font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;flex-shrink:0}
 .nav-link.on .cnt{background:#dfe1ff;color:var(--accent-d)}
 .side-spacer{flex:1}
+.side-log{padding:4px 12px 8px;border-top:1px solid var(--side-line);margin-top:6px}
+.side-log .side-label{padding:12px 8px 8px}
+.side-log .list{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding-right:2px}
+.side-log .log-item{padding:9px 10px;border-radius:9px;background:#fafafb;border:1px solid var(--line);border-left:3px solid var(--accent)}
+.side-log .log-item strong{display:block;margin-bottom:2px;font-size:11.5px;font-weight:700}
+.side-log .log-item div{font-size:11px;color:#4b5563;margin-bottom:2px;word-break:break-word;line-height:1.35}
+.side-log .log-item small{color:var(--muted2);font-size:10px}
 .side-foot{padding:12px;border-top:1px solid var(--side-line)}
 .side-foot a{display:flex;align-items:center;gap:8px;color:#374151;text-decoration:none;font-size:12.5px;font-weight:600;padding:8px 10px;border-radius:8px;transition:background .12s}
 .side-foot a:hover{background:#f1f2f5}
@@ -734,6 +741,20 @@ td.col-cust{max-width:150px}
       <a href="/?product=etanom-fatura" class="nav-link {{ 'on' if prod_filter=='etanom-fatura' else '' }}"><span class="lbl">🧾 Etanom Fatura</span><span class="cnt">{{ stats.fatura_count }}</span></a>
     </div>
     <div class="side-spacer"></div>
+    <div class="side-log">
+      <div class="side-label">🕒 Son İşlemler</div>
+      <div class="list">
+        {% for lg in logs %}
+        <div class="log-item">
+          <strong>{{ lg.action }}</strong>
+          <div>{{ lg.detail or '-' }}</div>
+          <small>{{ lg.created_at }}</small>
+        </div>
+        {% else %}
+        <div class="log-item">Kayıt yok.</div>
+        {% endfor %}
+      </div>
+    </div>
     <div class="side-foot">
       <a href="/change-password">⚙ Şifre Değiştir</a>
       <a href="/logout">↩ Çıkış Yap</a>
@@ -767,16 +788,14 @@ td.col-cust{max-width:150px}
       {% else %}Bu sayılar tüm ürün portföyünü kapsar.{% endif %}
     </div>
 
-    <div class="grid">
-      <div>
-        <div class="card">
-          <div class="card-head">
-            <h3>📋 Lisanslar</h3>
-            <div class="note">{{ licenses|length }} kayıt listeleniyor</div>
-          </div>
-          <div class="toolbar">
-            <input class="search" id="srch" placeholder="Müşteri, lisans anahtarı veya HW ID ara..." oninput="flt()">
-            <div class="filter-tabs">
+    <div class="card">
+      <div class="card-head">
+        <h3>📋 Lisanslar</h3>
+        <div class="note">{{ licenses|length }} kayıt listeleniyor</div>
+      </div>
+      <div class="toolbar">
+        <input class="search" id="srch" placeholder="Müşteri, lisans anahtarı veya HW ID ara..." oninput="flt()">
+        <div class="filter-tabs">
               <button class="ftab on" type="button" onclick="setF('all',this)">Tümü</button>
               <button class="ftab" type="button" onclick="setF('active',this)">Aktif</button>
               <button class="ftab" type="button" onclick="setF('expired',this)">Dolmuş</button>
@@ -830,27 +849,6 @@ td.col-cust{max-width:150px}
             </table>
           </div>
         </div>
-      </div>
-
-      <div>
-        <div class="card">
-          <div class="card-head"><h3>🕒 Son İşlemler</h3></div>
-          <div class="card-body">
-            <div class="log">
-              {% for lg in logs %}
-              <div class="log-item">
-                <strong>{{ lg.action }}</strong>
-                <div>{{ lg.detail or '-' }}</div>
-                <small>{{ lg.created_at }}</small>
-              </div>
-              {% else %}
-              <div class="log-item">Kayıt yok.</div>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </main>
 </div>
 
