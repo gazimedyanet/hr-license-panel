@@ -492,37 +492,39 @@ LOGIN_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gazi Medya - Giriş</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{overflow-x:hidden}
-:root{--bg:#f4f5f7;--card:#ffffff;--line:#e3e6ec;--text:#111827;--muted:#6b7280;--accent:#4f46e5;--accent-d:#4338ca;--danger:#dc2626;--danger-bg:#fef2f2}
-body{min-height:100vh;background:var(--bg);font-family:'Inter',Segoe UI,system-ui,sans-serif;color:var(--text);display:flex;align-items:center;justify-content:center;padding:24px}
-.card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:36px 32px;box-shadow:0 1px 2px rgba(17,24,39,.03),0 10px 28px rgba(17,24,39,.06)}
-.logo{width:44px;height:44px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:20px}
-h1{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
-.sub{color:var(--muted);font-size:13.5px;margin-bottom:26px}
-.err{background:var(--danger-bg);border:1px solid #fecaca;color:var(--danger);border-radius:10px;padding:11px 14px;margin-bottom:18px;font-size:13px;font-weight:500}
-label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px}
-.field{margin-bottom:16px}
-input{width:100%;background:#fff;border:1.5px solid #d5d9e0;color:var(--text);border-radius:9px;padding:10px 13px;font-size:14px;outline:none;font-family:inherit;transition:border-color .12s,box-shadow .12s}
-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.12)}
-button{width:100%;border:none;border-radius:9px;padding:11px 16px;margin-top:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .12s}
+:root{--bg:#f3f4f6;--card:#ffffff;--line:#dfe3e8;--text:#1a1f2b;--muted:#5f6b7a;--accent:#0b57d0;--accent-d:#0842a0;--danger:#c5221f;--danger-bg:#fce8e6}
+body{min-height:100vh;background:var(--bg);font-family:'Roboto',Arial,sans-serif;color:var(--text);display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:40px 36px;box-shadow:0 1px 2px rgba(26,31,43,.04),0 6px 20px rgba(26,31,43,.06)}
+.logo{width:44px;height:44px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;margin-bottom:22px;letter-spacing:-.02em}
+h1{font-size:21px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+.sub{color:var(--muted);font-size:13.5px;margin-bottom:8px}
+.divider{height:1px;background:var(--line);margin:22px 0}
+.err{background:var(--danger-bg);border:1px solid #f6bab7;color:var(--danger);border-radius:8px;padding:11px 14px;margin-bottom:18px;font-size:13px;font-weight:500}
+label{display:block;font-size:12.5px;font-weight:500;color:#3c4451;margin-bottom:6px}
+.field{margin-bottom:17px}
+input{width:100%;background:#fff;border:1.5px solid #c9cfd8;color:var(--text);border-radius:6px;padding:10px 13px;font-size:14px;outline:none;font-family:inherit;transition:border-color .12s,box-shadow .12s}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,87,208,.15)}
+button{width:100%;border:none;border-radius:6px;padding:11px 16px;margin-top:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:500;cursor:pointer;transition:background .12s}
 button:hover{background:var(--accent-d)}
-.foot{text-align:center;color:#9aa2b1;font-size:11.5px;margin-top:22px}
+.foot{text-align:center;color:#8a94a3;font-size:11.5px;margin-top:24px;letter-spacing:.02em}
 </style></head>
 <body>
 <div class="card">
-  <div class="logo">🔐</div>
+  <div class="logo">GM</div>
   <h1>Gazi Medya</h1>
-  <div class="sub">Lisans yönetim paneline giriş yapın</div>
+  <div class="sub">Lisans Yönetim Sistemi</div>
+  <div class="divider"></div>
   {% if error %}<div class="err">{{ error }}</div>{% endif %}
   <form method="POST">
     <div class="field"><label>Kullanıcı Adı</label><input name="username" autocomplete="username" required autofocus></div>
     <div class="field"><label>Şifre</label><input name="password" type="password" autocomplete="current-password" required></div>
-    <button type="submit">Giriş Yap</button>
+    <button type="submit">Oturum Aç</button>
   </form>
-  <div class="foot">Gazi Medya Yazılım · Lisans Yönetim Sistemi</div>
+  <div class="foot">GAZİ MEDYA YAZILIM &copy; Kurumsal Lisans Platformu</div>
 </div>
 </body></html>"""
 
@@ -532,33 +534,33 @@ CHANGE_PASS_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Şifre Değiştir</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{overflow-x:hidden}
-:root{--bg:#f4f5f7;--card:#ffffff;--line:#e3e6ec;--text:#111827;--muted:#6b7280;--accent:#4f46e5;--accent-d:#4338ca;--ok:#15803d;--ok-bg:#f0fdf4;--danger:#dc2626;--danger-bg:#fef2f2}
-body{min-height:100vh;background:var(--bg);font-family:'Inter',Segoe UI,system-ui,sans-serif;color:var(--text)}
-nav{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
-.brand{font-weight:700;font-size:14px;color:var(--text);display:flex;align-items:center;gap:9px}
-.brand .b{width:26px;height:26px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px}
-.nav-links a{color:var(--muted);text-decoration:none;margin-left:18px;font-size:13.5px;font-weight:600}
+:root{--bg:#f3f4f6;--card:#ffffff;--line:#dfe3e8;--text:#1a1f2b;--muted:#5f6b7a;--accent:#0b57d0;--accent-d:#0842a0;--ok:#137333;--ok-bg:#e6f4ea;--danger:#c5221f;--danger-bg:#fce8e6}
+body{min-height:100vh;background:var(--bg);font-family:'Roboto',Arial,sans-serif;color:var(--text)}
+nav{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.brand{font-weight:700;font-size:14px;color:var(--text);display:flex;align-items:center;gap:10px;letter-spacing:-.005em}
+.brand .b{width:26px;height:26px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.nav-links a{color:var(--muted);text-decoration:none;margin-left:20px;font-size:13px;font-weight:500}
 .nav-links a:hover{color:var(--text)}
-.wrap{max-width:480px;margin:56px auto;padding:0 20px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 1px 2px rgba(17,24,39,.03),0 10px 28px rgba(17,24,39,.06)}
-h1{font-size:19px;font-weight:800;letter-spacing:-.01em;margin-bottom:5px}
+.wrap{max-width:480px;margin:60px auto;padding:0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:32px;box-shadow:0 1px 2px rgba(26,31,43,.04),0 6px 20px rgba(26,31,43,.06)}
+h1{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-bottom:5px}
 .sub{color:var(--muted);font-size:13.5px;margin-bottom:24px}
-.ok{padding:11px 14px;border-radius:10px;margin-bottom:18px;font-size:13px;font-weight:500;background:var(--ok-bg);border:1px solid #bbf7d0;color:var(--ok)}
-.er{padding:11px 14px;border-radius:10px;margin-bottom:18px;font-size:13px;font-weight:500;background:var(--danger-bg);border:1px solid #fecaca;color:var(--danger)}
-label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px}
-.field{margin-bottom:16px}
-input{width:100%;background:#fff;border:1.5px solid #d5d9e0;color:var(--text);border-radius:9px;padding:10px 13px;font-size:14px;outline:none;font-family:inherit;transition:border-color .12s,box-shadow .12s}
-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.12)}
-button{width:100%;border:none;border-radius:9px;padding:11px 16px;margin-top:6px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .12s}
+.ok{padding:11px 14px;border-radius:8px;margin-bottom:18px;font-size:13px;font-weight:500;background:var(--ok-bg);border:1px solid #ceead6;color:var(--ok)}
+.er{padding:11px 14px;border-radius:8px;margin-bottom:18px;font-size:13px;font-weight:500;background:var(--danger-bg);border:1px solid #f6bab7;color:var(--danger)}
+label{display:block;font-size:12.5px;font-weight:500;color:#3c4451;margin-bottom:6px}
+.field{margin-bottom:17px}
+input{width:100%;background:#fff;border:1.5px solid #c9cfd8;color:var(--text);border-radius:6px;padding:10px 13px;font-size:14px;outline:none;font-family:inherit;transition:border-color .12s,box-shadow .12s}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,87,208,.15)}
+button{width:100%;border:none;border-radius:6px;padding:11px 16px;margin-top:6px;background:var(--accent);color:#fff;font-size:14px;font-weight:500;cursor:pointer;transition:background .12s}
 button:hover{background:var(--accent-d)}
 </style></head>
 <body>
 <nav>
-  <div class="brand"><div class="b">🔐</div>Gazi Medya</div>
+  <div class="brand"><div class="b">GM</div>Gazi Medya</div>
   <div class="nav-links"><a href="/">Panele Dön</a><a href="/logout">Çıkış</a></div>
 </nav>
 <div class="wrap"><div class="card">
@@ -581,144 +583,142 @@ PANEL_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gazi Medya Lisans Paneli</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{overflow-x:hidden;width:100%}
 :root{
-  --bg:#f4f5f7;--card:#ffffff;--line:#e3e6ec;--line2:#d5d9e0;
-  --text:#111827;--muted:#6b7280;--muted2:#9aa2b1;
-  --accent:#4f46e5;--accent-d:#4338ca;--accent-bg:#eef0ff;
+  --bg:#f3f4f6;--card:#ffffff;--line:#dfe3e8;--line2:#c9cfd8;
+  --text:#1a1f2b;--muted:#5f6b7a;--muted2:#8a94a3;
+  --accent:#0b57d0;--accent-d:#0842a0;--accent-bg:#e8f0fe;
   --side-bg:#fbfbfc;--side-line:#e3e6ec;
-  --green:#15803d;--green-bg:#f0fdf4;--green-bd:#bbf7d0;
-  --amber:#b45309;--amber-bg:#fffbeb;--amber-bd:#fde68a;
-  --red:#dc2626;--red-bg:#fef2f2;--red-bd:#fecaca;
-  --blue:#1d4ed8;--blue-bg:#eff6ff;--blue-bd:#bfdbfe;
-  --orange:#c2410c;--orange-bg:#fff7ed;--orange-bd:#fed7aa;
-  --purple:#6d28d9;--purple-bg:#f5f3ff;--purple-bd:#ddd6fe;
-  --cyan:#0e7490;--cyan-bg:#ecfeff;--cyan-bd:#a5f3fc;
-  --yellow:#a16207;--yellow-bg:#fefce8;--yellow-bd:#fde047;
-  --radius:14px;--sidebar-w:236px
+  --green:#137333;--green-bg:#e6f4ea;--green-bd:#ceead6;
+  --amber:#a35700;--amber-bg:#fef7e0;--amber-bd:#fdd775;
+  --red:#c5221f;--red-bg:#fce8e6;--red-bd:#f6bab7;
+  --gray:#3c4451;--gray-bg:#eef0f3;--gray-bd:#d7dbe1;
+  --radius:8px;--sidebar-w:240px
 }
-html{scrollbar-color:#d5d9e0 transparent}
+html{scrollbar-color:#c9cfd8 transparent}
 ::-webkit-scrollbar{height:9px;width:9px}
-::-webkit-scrollbar-thumb{background:#d5d9e0;border-radius:8px}
-body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Inter',Segoe UI,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar-thumb{background:#c9cfd8;border-radius:8px}
+body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Roboto',Arial,sans-serif;-webkit-font-smoothing:antialiased}
 .shell{display:flex;min-height:100vh;min-width:0}
 
-/* ── Sidebar (açık) ──────────────────────────────────── */
+/* ── Sol Menü ────────────────────────────────────────── */
 .sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--side-bg);border-right:1px solid var(--side-line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
-.side-brand{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid var(--side-line)}
-.side-brand .b{width:32px;height:32px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-.side-brand h1{font-size:13.5px;font-weight:700;letter-spacing:-.01em}
-.side-brand small{display:block;color:var(--muted2);font-size:10.5px;margin-top:1px;font-weight:500}
-.side-section{padding:14px 12px 6px}
-.side-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);padding:0 8px 8px}
-.nav-link{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#374151;text-decoration:none;font-size:12.5px;font-weight:600;padding:8px 10px;border-radius:8px;margin-bottom:2px;transition:background .12s,color .12s}
-.nav-link:hover{background:#f1f2f5}
-.nav-link.on{background:var(--accent-bg);color:var(--accent-d)}
-.nav-link .lbl{display:flex;align-items:center;gap:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.nav-link .cnt{background:#e9eaee;color:var(--muted);font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;flex-shrink:0}
-.nav-link.on .cnt{background:#dfe1ff;color:var(--accent-d)}
+.side-brand{display:flex;align-items:center;gap:10px;padding:18px}
+.side-brand .b{width:30px;height:30px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;color:#fff;flex-shrink:0}
+.side-brand h1{font-size:13.5px;font-weight:700;letter-spacing:-.005em}
+.side-brand small{display:block;color:var(--muted2);font-size:10.5px;margin-top:1px;font-weight:400}
+.side-section{padding:8px 10px 4px}
+.side-label{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted2);padding:10px 10px 6px}
+.nav-link{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#333c48;text-decoration:none;font-size:12.5px;font-weight:500;padding:8px 10px;border-radius:6px;margin-bottom:1px;transition:background .12s,color .12s}
+.nav-link:hover{background:#eef0f3}
+.nav-link.on{background:var(--accent-bg);color:var(--accent-d);font-weight:700}
+.nav-link .lbl{display:flex;align-items:center;gap:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.badge{width:18px;height:18px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;color:#fff;letter-spacing:-.02em}
+.badge-all{background:#3c4451}
+.badge-hr{background:#0b57d0}
+.badge-asc{background:#b06000}
+.badge-ft{background:#137333}
+.badge-eta{background:#7c3aed}
+.badge-kkdik{background:#0e7c86}
+.badge-etk{background:#9d6b0a}
+.badge-etf{background:#c5221f}
+.nav-link .cnt{background:#e3e6ec;color:var(--muted);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;flex-shrink:0}
+.nav-link.on .cnt{background:#c9dbfc;color:var(--accent-d)}
 .side-spacer{flex:1}
-.side-log{padding:4px 12px 8px;border-top:1px solid var(--side-line);margin-top:6px}
-.side-log .side-label{padding:12px 8px 8px}
-.side-log .list{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding-right:2px}
-.side-log .log-item{padding:9px 10px;border-radius:9px;background:#fafafb;border:1px solid var(--line);border-left:3px solid var(--accent)}
-.side-log .log-item strong{display:block;margin-bottom:2px;font-size:11.5px;font-weight:700}
-.side-log .log-item div{font-size:11px;color:#4b5563;margin-bottom:2px;word-break:break-word;line-height:1.35}
+.side-log{padding:4px 10px 8px;border-top:1px solid var(--side-line);margin-top:6px}
+.side-log .side-label{padding:12px 10px 8px}
+.side-log .list{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px}
+.side-log .log-item{padding:8px 10px;border-radius:6px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent)}
+.side-log .log-item strong{display:block;margin-bottom:2px;font-size:11px;font-weight:700}
+.side-log .log-item div{font-size:10.5px;color:#4b5563;margin-bottom:2px;word-break:break-word;line-height:1.35}
 .side-log .log-item small{color:var(--muted2);font-size:10px}
-.side-foot{padding:12px;border-top:1px solid var(--side-line)}
-.side-foot a{display:flex;align-items:center;gap:8px;color:#374151;text-decoration:none;font-size:12.5px;font-weight:600;padding:8px 10px;border-radius:8px;transition:background .12s}
-.side-foot a:hover{background:#f1f2f5}
+.side-foot{padding:10px;border-top:1px solid var(--side-line)}
+.side-foot a{display:flex;align-items:center;gap:8px;color:#333c48;text-decoration:none;font-size:12.5px;font-weight:500;padding:8px 10px;border-radius:6px;transition:background .12s}
+.side-foot a:hover{background:#eef0f3}
 
 /* ── İçerik ──────────────────────────────────────────── */
-.main{flex:1;min-width:0;padding:24px 28px 40px;max-width:100%}
-.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px}
-.topbar h2{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.main{flex:1;min-width:0;padding:24px 30px 42px;max-width:100%}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.topbar h2{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:5px}
 .topbar p{color:var(--muted);font-size:13px;max-width:600px;line-height:1.5}
-.btn{border:none;border-radius:9px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:filter .12s,transform .12s;white-space:nowrap}
-.btn:hover{filter:brightness(.94)}
+.btn{border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:filter .12s,transform .12s;white-space:nowrap}
+.btn:hover{filter:brightness(.93)}
 .btn:active{transform:translateY(1px)}
 .btn-main{background:var(--accent)}
-.btn-green{background:#16a34a}
-.btn-orange{background:#ea580c}
-.btn-red{background:#dc2626}
-.btn-muted{background:#6b7280}
-.btn-xs{padding:6px 10px;font-size:11px;border-radius:7px}
+.btn-green{background:#188038}
+.btn-orange{background:#b06000}
+.btn-red{background:#c5221f}
+.btn-muted{background:#5f6b7a}
+.btn-xs{padding:6px 10px;font-size:11px;border-radius:5px}
 
 .stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:8px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;min-width:0}
-.stat .k{color:var(--muted);font-size:11px;margin-bottom:7px;font-weight:600}
-.stat .v{font-size:23px;font-weight:800;letter-spacing:-.01em}
-.stats-note{font-size:11px;color:var(--muted2);margin-bottom:20px}
+.stat .k{color:var(--muted);font-size:11px;margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:.03em}
+.stat .v{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.stats-note{font-size:11.5px;color:var(--muted2);margin-bottom:20px}
 
-.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:16px;align-items:start;min-width:0}
-.grid>div{min-width:0}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 2px rgba(17,24,39,.03);min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;min-width:0}
 .card-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
-.card-head h3{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+.card-head h3{font-size:13.5px;font-weight:700}
 .card-body{padding:18px}
 .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
 .full{grid-column:1/-1}
-label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px}
-input,select,textarea{width:100%;background:#fff;border:1.5px solid #d5d9e0;color:var(--text);border-radius:9px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;transition:border-color .12s,box-shadow .12s}
+label{display:block;font-size:12px;font-weight:500;color:#3c4451;margin-bottom:6px}
+input,select,textarea{width:100%;background:#fff;border:1.5px solid #c9cfd8;color:var(--text);border-radius:6px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;transition:border-color .12s,box-shadow .12s}
 select,option{background:#fff;color:var(--text)}
 textarea{min-height:76px;resize:vertical}
-input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.12)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,87,208,.15)}
 .actions{margin-top:15px;display:flex;justify-content:flex-end;gap:9px}
 
 .table-wrap{overflow-x:auto;max-width:100%}
 .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line)}
-.search{min-width:180px;flex:1;background:#fff;border:1.5px solid #d5d9e0;border-radius:9px;color:var(--text);padding:8px 12px;font-size:12.5px;outline:none}
-.search:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,70,229,.12)}
+.search{min-width:180px;flex:1;background:#fff;border:1.5px solid #c9cfd8;border-radius:6px;color:var(--text);padding:8px 12px;font-size:12.5px;outline:none}
+.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,87,208,.15)}
 .filter-tabs{display:flex;gap:5px;flex-wrap:wrap}
-.ftab{border:1px solid var(--line2);background:#fff;color:var(--muted);border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;transition:all .12s}
-.ftab:hover{background:#f8fafc}
+.ftab{border:1px solid var(--line2);background:#fff;color:var(--muted);border-radius:5px;padding:6px 10px;font-size:11px;font-weight:500;cursor:pointer;transition:all .12s}
+.ftab:hover{background:#f8f9fa}
 .ftab.on{color:#fff;background:var(--accent);border-color:var(--accent)}
 table{width:100%;border-collapse:collapse;table-layout:auto}
 th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:middle}
-th{color:var(--muted);font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;background:#fafafb;white-space:nowrap}
-tbody tr:hover td{background:#fafbff}
-td.col-id{width:44px;color:var(--muted2)}
+th{color:var(--muted);font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;background:#f8f9fa;white-space:nowrap}
+tbody tr:hover td{background:#f6f8fc}
+td.col-id{width:44px;color:var(--muted2);font-variant-numeric:tabular-nums}
 td.col-cust{max-width:150px}
-.custname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
-.kbox{display:inline-flex;align-items:center;gap:5px;max-width:190px;overflow:hidden;text-overflow:ellipsis;padding:6px 9px;border-radius:7px;background:#f1f2f5;border:1px solid var(--line);font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;cursor:pointer;font-size:10.5px;white-space:nowrap;transition:background .12s,border-color .12s}
-.kbox:hover{background:var(--accent-bg);border-color:#c7d2fe}
-.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}
+.custname{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.kbox{display:inline-flex;align-items:center;gap:5px;max-width:190px;overflow:hidden;text-overflow:ellipsis;padding:6px 9px;border-radius:5px;background:#f1f2f5;border:1px solid var(--line);font-family:'Roboto Mono',ui-monospace,Consolas,monospace;cursor:pointer;font-size:10.5px;white-space:nowrap;transition:background .12s,border-color .12s}
+.kbox:hover{background:var(--accent-bg);border-color:#aecbfa}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.green::before{background:var(--green)}
 .amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}
+.amber::before{background:var(--amber)}
 .red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
-.blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)}
-.orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-bd)}
-.purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-bd)}
-.cyan{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan-bd)}
-.yellow{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-bd)}
+.red::before{background:var(--red)}
+.gray{background:var(--gray-bg);color:var(--gray);border:1px solid var(--gray-bd)}
+.gray::before{background:var(--gray)}
 .actions-row{display:flex;gap:4px;flex-wrap:nowrap}
 
-.log{display:flex;flex-direction:column;gap:8px}
-.log-item{padding:11px 13px;border-radius:10px;background:#fafafb;border:1px solid var(--line);border-left:3px solid var(--accent);min-width:0}
-.log-item strong{display:block;margin-bottom:3px;font-size:12px;font-weight:700}
-.log-item div{font-size:11.5px;color:#4b5563;margin-bottom:3px;word-break:break-word}
-.log-item small{color:var(--muted2);font-size:10.5px}
-
-.modal{position:fixed;inset:0;background:rgba(17,24,39,.45);display:none;align-items:center;justify-content:center;z-index:999;padding:16px}
+.modal{position:fixed;inset:0;background:rgba(26,31,43,.4);display:none;align-items:center;justify-content:center;z-index:999;padding:16px}
 .modal.open{display:flex}
-.modal-box{width:100%;max-width:440px;background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:0 22px 64px rgba(17,24,39,.28);overflow:hidden;max-height:88vh;display:flex;flex-direction:column}
+.modal-box{width:100%;max-width:440px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 48px rgba(26,31,43,.28);overflow:hidden;max-height:88vh;display:flex;flex-direction:column}
 .modal-head{padding:16px 19px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.modal-head h4{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
-.modal-close{border:none;background:#f1f2f5;color:var(--muted);font-size:16px;cursor:pointer;width:26px;height:26px;border-radius:7px;line-height:1}
-.modal-close:hover{background:#e3e6ec;color:var(--text)}
+.modal-head h4{font-size:14px;font-weight:700}
+.modal-close{border:none;background:#eef0f3;color:var(--muted);font-size:16px;cursor:pointer;width:26px;height:26px;border-radius:5px;line-height:1}
+.modal-close:hover{background:#dfe3e8;color:var(--text)}
 .modal-body{padding:19px;overflow-y:auto}
 .info-row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12.5px}
 .info-row:last-child{border-bottom:none}
-.info-row .ik{color:var(--muted);font-weight:600;flex-shrink:0}
-.info-row .iv{text-align:right;font-weight:600;word-break:break-word}
+.info-row .ik{color:var(--muted);font-weight:500;flex-shrink:0}
+.info-row .iv{text-align:right;font-weight:500;word-break:break-word}
 
-.toast{position:fixed;right:18px;bottom:18px;z-index:1200;background:#111827;color:#fff;padding:10px 15px;border-radius:9px;font-size:12.5px;font-weight:600;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
+.toast{position:fixed;right:18px;bottom:18px;z-index:1200;background:#1a1f2b;color:#fff;padding:10px 15px;border-radius:6px;font-size:12.5px;font-weight:500;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 .note{font-size:11.5px;color:var(--muted)}
-@media(max-width:1180px){.grid{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1180px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.sidebar{display:none}}
 @media(max-width:740px){.main{padding:16px}.stats{grid-template-columns:minmax(0,1fr)}.form-grid{grid-template-columns:minmax(0,1fr)}}
 </style></head>
@@ -726,23 +726,23 @@ td.col-cust{max-width:150px}
 <div class="shell">
   <aside class="sidebar">
     <div class="side-brand">
-      <div class="b">🔐</div>
+      <div class="b">GM</div>
       <div><h1>Gazi Medya</h1><small>Lisans Paneli</small></div>
     </div>
     <div class="side-section">
       <div class="side-label">Ürünler</div>
-      <a href="/?product=all" class="nav-link {{ 'on' if prod_filter=='all' else '' }}"><span class="lbl">🗂 Tümü</span><span class="cnt">{{ stats.total }}</span></a>
-      <a href="/?product=gazi-hr" class="nav-link {{ 'on' if prod_filter=='gazi-hr' else '' }}"><span class="lbl">👥 Gazi HR</span><span class="cnt">{{ stats.hr_count }}</span></a>
-      <a href="/?product=autoservis-crm" class="nav-link {{ 'on' if prod_filter=='autoservis-crm' else '' }}"><span class="lbl">🔧 AutoServis</span><span class="cnt">{{ stats.asc_count }}</span></a>
-      <a href="/?product=fiyat-teklifi" class="nav-link {{ 'on' if prod_filter=='fiyat-teklifi' else '' }}"><span class="lbl">📊 Fiyat Teklifi</span><span class="cnt">{{ stats.ft_count }}</span></a>
-      <a href="/?product=eta-analitik" class="nav-link {{ 'on' if prod_filter=='eta-analitik' else '' }}"><span class="lbl">🚢 ETA Analitik</span><span class="cnt">{{ stats.eta_count }}</span></a>
-      <a href="/?product=kkdik" class="nav-link {{ 'on' if prod_filter=='kkdik' else '' }}"><span class="lbl">⚗️ KKDİK Suite</span><span class="cnt">{{ stats.kkdik_count }}</span></a>
-      <a href="/?product=etanom-teklif" class="nav-link {{ 'on' if prod_filter=='etanom-teklif' else '' }}"><span class="lbl">📄 Etanom Teklif</span><span class="cnt">{{ stats.etanom_count }}</span></a>
-      <a href="/?product=etanom-fatura" class="nav-link {{ 'on' if prod_filter=='etanom-fatura' else '' }}"><span class="lbl">🧾 Etanom Fatura</span><span class="cnt">{{ stats.fatura_count }}</span></a>
+      <a href="/?product=all" class="nav-link {{ 'on' if prod_filter=='all' else '' }}"><span class="lbl"><span class="badge badge-all">TÜM</span>Tümü</span><span class="cnt">{{ stats.total }}</span></a>
+      <a href="/?product=gazi-hr" class="nav-link {{ 'on' if prod_filter=='gazi-hr' else '' }}"><span class="lbl"><span class="badge badge-hr">HR</span>Gazi HR</span><span class="cnt">{{ stats.hr_count }}</span></a>
+      <a href="/?product=autoservis-crm" class="nav-link {{ 'on' if prod_filter=='autoservis-crm' else '' }}"><span class="lbl"><span class="badge badge-asc">AS</span>AutoServis</span><span class="cnt">{{ stats.asc_count }}</span></a>
+      <a href="/?product=fiyat-teklifi" class="nav-link {{ 'on' if prod_filter=='fiyat-teklifi' else '' }}"><span class="lbl"><span class="badge badge-ft">FT</span>Fiyat Teklifi</span><span class="cnt">{{ stats.ft_count }}</span></a>
+      <a href="/?product=eta-analitik" class="nav-link {{ 'on' if prod_filter=='eta-analitik' else '' }}"><span class="lbl"><span class="badge badge-eta">EA</span>ETA Analitik</span><span class="cnt">{{ stats.eta_count }}</span></a>
+      <a href="/?product=kkdik" class="nav-link {{ 'on' if prod_filter=='kkdik' else '' }}"><span class="lbl"><span class="badge badge-kkdik">KK</span>KKDİK Suite</span><span class="cnt">{{ stats.kkdik_count }}</span></a>
+      <a href="/?product=etanom-teklif" class="nav-link {{ 'on' if prod_filter=='etanom-teklif' else '' }}"><span class="lbl"><span class="badge badge-etk">ET</span>Etanom Teklif</span><span class="cnt">{{ stats.etanom_count }}</span></a>
+      <a href="/?product=etanom-fatura" class="nav-link {{ 'on' if prod_filter=='etanom-fatura' else '' }}"><span class="lbl"><span class="badge badge-etf">EF</span>Etanom Fatura</span><span class="cnt">{{ stats.fatura_count }}</span></a>
     </div>
     <div class="side-spacer"></div>
     <div class="side-log">
-      <div class="side-label">🕒 Son İşlemler</div>
+      <div class="side-label">Son İşlemler</div>
       <div class="list">
         {% for lg in logs %}
         <div class="log-item">
@@ -756,8 +756,8 @@ td.col-cust{max-width:150px}
       </div>
     </div>
     <div class="side-foot">
-      <a href="/change-password">⚙ Şifre Değiştir</a>
-      <a href="/logout">↩ Çıkış Yap</a>
+      <a href="/change-password">Şifre Değiştir</a>
+      <a href="/logout">Çıkış Yap</a>
     </div>
   </aside>
 
@@ -765,15 +765,15 @@ td.col-cust{max-width:150px}
     <div class="topbar">
       <div>
         <h2>
-          {% if prod_filter in products %}{{ products[prod_filter].emoji }} {{ products[prod_filter].label }} Lisansları
-          {% else %}🗂 Tüm Lisanslar{% endif %}
+          {% if prod_filter in products %}{{ products[prod_filter].label }} Lisansları
+          {% else %}Tüm Lisanslar{% endif %}
         </h2>
         <p>
           {% if prod_filter in products %}Bu sayfada yalnızca {{ products[prod_filter].label }} ürününe ait lisanslar listelenir.
           {% else %}Tüm ürün portföyünüzdeki lisansları buradan yönetin.{% endif %}
         </p>
       </div>
-      <button class="btn btn-main" type="button" onclick="openM('yeniLisans')">＋ Yeni Lisans Ekle</button>
+      <button class="btn btn-main" type="button" onclick="openM('yeniLisans')">+ Yeni Lisans Ekle</button>
     </div>
 
     <div class="stats">
@@ -781,93 +781,92 @@ td.col-cust{max-width:150px}
       <div class="stat"><div class="k">Aktif</div><div class="v">{{ fstats.active }}</div></div>
       <div class="stat"><div class="k">Dolmuş</div><div class="v">{{ fstats.expired }}</div></div>
       <div class="stat"><div class="k">İptal</div><div class="v">{{ fstats.revoked }}</div></div>
-      <div class="stat"><div class="k">Yaklaşan (30 gün)</div><div class="v">{{ fstats.expiring }}</div></div>
+      <div class="stat"><div class="k">Yaklaşan (30 Gün)</div><div class="v">{{ fstats.expiring }}</div></div>
     </div>
     <div class="stats-note">
-      {% if prod_filter in products %}Bu sayılar yalnızca {{ products[prod_filter].label }} lisanslarını kapsar · Portföy genelinde {{ stats.total }} lisans bulunuyor.
+      {% if prod_filter in products %}Bu sayılar yalnızca {{ products[prod_filter].label }} lisanslarını kapsar &middot; Portföy genelinde {{ stats.total }} lisans bulunuyor.
       {% else %}Bu sayılar tüm ürün portföyünü kapsar.{% endif %}
     </div>
 
     <div class="card">
       <div class="card-head">
-        <h3>📋 Lisanslar</h3>
+        <h3>Lisanslar</h3>
         <div class="note">{{ licenses|length }} kayıt listeleniyor</div>
       </div>
       <div class="toolbar">
         <input class="search" id="srch" placeholder="Müşteri, lisans anahtarı veya HW ID ara..." oninput="flt()">
         <div class="filter-tabs">
-              <button class="ftab on" type="button" onclick="setF('all',this)">Tümü</button>
-              <button class="ftab" type="button" onclick="setF('active',this)">Aktif</button>
-              <button class="ftab" type="button" onclick="setF('expired',this)">Dolmuş</button>
-              <button class="ftab" type="button" onclick="setF('revoked',this)">İptal</button>
-            </div>
-          </div>
-          <div class="card-body table-wrap" style="padding:0">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th><th>Müşteri</th><th>HW ID</th><th>Lisans Anahtarı</th><th>Durum</th><th>İşlemler</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for l in licenses %}
-                {% set is_exp = l.expires_at < now %}
-                {% set status = 'revoked' if l.is_revoked else ('expired' if is_exp else 'active') %}
-                {% set prod = l.product or 'gazi-hr' %}
-                <tr data-s="{{ status }}" data-q="{{ ((l.customer_name or '')~' '~(l.customer_email or '')~' '~l.license_key~' '~l.hw_id)|lower }}">
-                  <td class="col-id">{{ l.id }}</td>
-                  <td class="col-cust"><span class="custname" title="{{ l.customer_name or '-' }}">{{ l.customer_name or '-' }}</span></td>
-                  <td><span class="kbox" onclick="copyText('{{ l.hw_id }}')" title="Kopyala">{{ l.hw_id }}</span></td>
-                  <td><span class="kbox" onclick="copyText('{{ l.license_key }}')" title="Kopyala">{{ l.license_key }}</span></td>
-                  <td>
-                    {% if l.is_revoked %}<span class="pill red">İptal</span>
-                    {% elif is_exp %}<span class="pill amber">Dolmuş</span>
-                    {% else %}<span class="pill green">Aktif</span>{% endif %}
-                  </td>
-                  <td>
-                    <div class="actions-row">
-                      <button class="btn btn-muted btn-xs" type="button" onclick="openM('detay{{ l.id }}')">Detay</button>
-                      <button class="btn btn-green btn-xs" type="button" onclick="openM('uzat{{ l.id }}')">Uzat</button>
-                      <button class="btn btn-main btn-xs" type="button" onclick="openM('duz{{ l.id }}')">Düzenle</button>
-                      {% if not l.is_revoked %}
-                        <button class="btn btn-orange btn-xs" type="button" onclick="openM('ipt{{ l.id }}')">İptal</button>
-                      {% else %}
-                        <form method="POST" action="/restore/{{ l.id }}" style="display:inline">
-                          <button class="btn btn-green btn-xs" type="submit">Aktifleştir</button>
-                        </form>
-                      {% endif %}
-                      <form method="POST" action="/delete/{{ l.id }}" style="display:inline" onsubmit="return confirm('Kalıcı silinecek. Devam?')">
-                        <button class="btn btn-red btn-xs" type="submit">Sil</button>
-                      </form>
-                    </div>
-                  </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" style="padding:32px;color:var(--muted)">Henüz lisans kaydı yok.</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+          <button class="ftab on" type="button" onclick="setF('all',this)">Tümü</button>
+          <button class="ftab" type="button" onclick="setF('active',this)">Aktif</button>
+          <button class="ftab" type="button" onclick="setF('expired',this)">Dolmuş</button>
+          <button class="ftab" type="button" onclick="setF('revoked',this)">İptal</button>
         </div>
+      </div>
+      <div class="card-body table-wrap" style="padding:0">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Müşteri</th><th>HW ID</th><th>Lisans Anahtarı</th><th>Durum</th><th>İşlemler</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in licenses %}
+            {% set is_exp = l.expires_at < now %}
+            {% set status = 'revoked' if l.is_revoked else ('expired' if is_exp else 'active') %}
+            <tr data-s="{{ status }}" data-q="{{ ((l.customer_name or '')~' '~(l.customer_email or '')~' '~l.license_key~' '~l.hw_id)|lower }}">
+              <td class="col-id">{{ l.id }}</td>
+              <td class="col-cust"><span class="custname" title="{{ l.customer_name or '-' }}">{{ l.customer_name or '-' }}</span></td>
+              <td><span class="kbox" onclick="copyText('{{ l.hw_id }}')" title="Kopyala">{{ l.hw_id }}</span></td>
+              <td><span class="kbox" onclick="copyText('{{ l.license_key }}')" title="Kopyala">{{ l.license_key }}</span></td>
+              <td>
+                {% if l.is_revoked %}<span class="pill red">İptal</span>
+                {% elif is_exp %}<span class="pill amber">Dolmuş</span>
+                {% else %}<span class="pill green">Aktif</span>{% endif %}
+              </td>
+              <td>
+                <div class="actions-row">
+                  <button class="btn btn-muted btn-xs" type="button" onclick="openM('detay{{ l.id }}')">Detay</button>
+                  <button class="btn btn-green btn-xs" type="button" onclick="openM('uzat{{ l.id }}')">Uzat</button>
+                  <button class="btn btn-main btn-xs" type="button" onclick="openM('duz{{ l.id }}')">Düzenle</button>
+                  {% if not l.is_revoked %}
+                    <button class="btn btn-orange btn-xs" type="button" onclick="openM('ipt{{ l.id }}')">İptal</button>
+                  {% else %}
+                    <form method="POST" action="/restore/{{ l.id }}" style="display:inline">
+                      <button class="btn btn-green btn-xs" type="submit">Aktifleştir</button>
+                    </form>
+                  {% endif %}
+                  <form method="POST" action="/delete/{{ l.id }}" style="display:inline" onsubmit="return confirm('Kalıcı silinecek. Devam?')">
+                    <button class="btn btn-red btn-xs" type="submit">Sil</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="padding:32px;color:var(--muted)">Henüz lisans kaydı yok.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </main>
 </div>
 
 <div id="yeniLisans" class="modal" onclick="if(event.target===this)closeM('yeniLisans')">
   <div class="modal-box">
-    <div class="modal-head"><h4>＋ Yeni Lisans Ekle</h4><button class="modal-close" type="button" onclick="closeM('yeniLisans')">&times;</button></div>
+    <div class="modal-head"><h4>Yeni Lisans Ekle</h4><button class="modal-close" type="button" onclick="closeM('yeniLisans')">&times;</button></div>
     <div class="modal-body">
       <form method="POST" action="/create">
         <div class="form-grid">
           <div>
             <label>Ürün</label>
             <select name="product">
-              <option value="gazi-hr" {{ 'selected' if prod_filter=='gazi-hr' else '' }}>👥 Gazi HR</option>
-              <option value="autoservis-crm" {{ 'selected' if prod_filter=='autoservis-crm' else '' }}>🔧 AutoServis CRM</option>
-              <option value="fiyat-teklifi" {{ 'selected' if prod_filter=='fiyat-teklifi' else '' }}>📊 Fiyat Teklifi</option>
-              <option value="eta-analitik" {{ 'selected' if prod_filter=='eta-analitik' else '' }}>🚢 ETA Analitik ERP</option>
-              <option value="kkdik" {{ 'selected' if prod_filter=='kkdik' else '' }}>⚗️ KKDİK Suite</option>
-              <option value="etanom-teklif" {{ 'selected' if prod_filter=='etanom-teklif' else '' }}>📄 Etanom Teklif</option>
-              <option value="etanom-fatura" {{ 'selected' if prod_filter=='etanom-fatura' else '' }}>🧾 Etanom Fatura (İhracat)</option>
+              <option value="gazi-hr" {{ 'selected' if prod_filter=='gazi-hr' else '' }}>Gazi HR</option>
+              <option value="autoservis-crm" {{ 'selected' if prod_filter=='autoservis-crm' else '' }}>AutoServis CRM</option>
+              <option value="fiyat-teklifi" {{ 'selected' if prod_filter=='fiyat-teklifi' else '' }}>Fiyat Teklifi</option>
+              <option value="eta-analitik" {{ 'selected' if prod_filter=='eta-analitik' else '' }}>ETA Analitik ERP</option>
+              <option value="kkdik" {{ 'selected' if prod_filter=='kkdik' else '' }}>KKDİK Suite</option>
+              <option value="etanom-teklif" {{ 'selected' if prod_filter=='etanom-teklif' else '' }}>Etanom Teklif</option>
+              <option value="etanom-fatura" {{ 'selected' if prod_filter=='etanom-fatura' else '' }}>Etanom Fatura (İhracat)</option>
             </select>
           </div>
           <div>
@@ -923,16 +922,16 @@ td.col-cust{max-width:150px}
 {% set prod = l.product or 'gazi-hr' %}
 <div id="detay{{ l.id }}" class="modal" onclick="if(event.target===this)closeM('detay{{ l.id }}')">
   <div class="modal-box">
-    <div class="modal-head"><h4>Lisans Detayı · #{{ l.id }}</h4><button class="modal-close" type="button" onclick="closeM('detay{{ l.id }}')">&times;</button></div>
+    <div class="modal-head"><h4>Lisans Detayı &middot; #{{ l.id }}</h4><button class="modal-close" type="button" onclick="closeM('detay{{ l.id }}')">&times;</button></div>
     <div class="modal-body">
       <div class="info-row"><div class="ik">Ürün</div><div class="iv">
-        {% if prod=='autoservis-crm' %}🔧 AutoServis CRM
-        {% elif prod=='fiyat-teklifi' %}📊 Fiyat Teklifi
-        {% elif prod=='eta-analitik' %}🚢 ETA Analitik ERP
-        {% elif prod=='kkdik' %}⚗️ KKDİK Suite
-        {% elif prod=='etanom-teklif' %}📄 Etanom Teklif
-        {% elif prod=='etanom-fatura' %}🧾 Etanom Fatura (İhracat)
-        {% else %}👥 Gazi HR{% endif %}
+        {% if prod=='autoservis-crm' %}AutoServis CRM
+        {% elif prod=='fiyat-teklifi' %}Fiyat Teklifi
+        {% elif prod=='eta-analitik' %}ETA Analitik ERP
+        {% elif prod=='kkdik' %}KKDİK Suite
+        {% elif prod=='etanom-teklif' %}Etanom Teklif
+        {% elif prod=='etanom-fatura' %}Etanom Fatura (İhracat)
+        {% else %}Gazi HR{% endif %}
       </div></div>
       <div class="info-row"><div class="ik">Müşteri / Firma</div><div class="iv">{{ l.customer_name or '-' }}</div></div>
       <div class="info-row"><div class="ik">E-posta</div><div class="iv">{{ l.customer_email or '-' }}</div></div>
