@@ -494,124 +494,243 @@ LOGIN_HTML = """<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gazi Medya - Giriş</title>
+<title>Gazi Medya | Lisans Yönetim Paneli</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#172033;--muted:#667085;--line:#e6eaf0;--paper:#ffffff;
-  --brand:#1d4ed8;--brand-2:#0f766e;--danger:#b42318;--danger-bg:#fff1f0;
+  --navy:#07111f;--navy2:#0f1b2d;--panel:#0b1626;--paper:#ffffff;
+  --ink:#101828;--muted:#667085;--soft:#f2f4f7;--line:#e4e7ec;
+  --brand:#1d4ed8;--brand2:#0f766e;--brand-soft:#eff6ff;
+  --danger:#b42318;--danger-bg:#fff1f0;--danger-line:#fecdca;
+  --shadow:0 28px 70px rgba(2,6,23,.34);
 }
 html,body{min-height:100%;overflow-x:hidden}
 body{
   min-height:100vh;
-  font-family:'Roboto',Arial,sans-serif;
+  font-family:'Inter',Arial,sans-serif;
   color:var(--ink);
+  background:
+    radial-gradient(circle at 8% 8%,rgba(29,78,216,.24),transparent 30%),
+    radial-gradient(circle at 92% 12%,rgba(15,118,110,.22),transparent 32%),
+    linear-gradient(135deg,#06101f 0%,#0b1324 48%,#111827 100%);
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:28px;
-  background:
-    radial-gradient(circle at 18% 15%,rgba(59,130,246,.32),transparent 34%),
-    radial-gradient(circle at 84% 18%,rgba(20,184,166,.20),transparent 34%),
-    linear-gradient(135deg,#07111f 0%,#0f172a 45%,#111827 100%);
+  padding:34px;
   -webkit-font-smoothing:antialiased;
 }
 body:before{
   content:"";
   position:fixed;
   inset:0;
-  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
-  background-size:42px 42px;
-  mask-image:linear-gradient(to bottom,rgba(0,0,0,.9),transparent 78%);
+  background-image:
+    linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.95),transparent 82%);
   pointer-events:none;
 }
-.card{
+.login-shell{
   position:relative;
-  width:100%;
-  max-width:430px;
-  background:rgba(255,255,255,.97);
-  border:1px solid rgba(255,255,255,.56);
-  border-radius:22px;
-  padding:42px 40px 34px;
-  box-shadow:0 30px 80px rgba(2,6,23,.38),0 1px 0 rgba(255,255,255,.75) inset;
+  width:min(1040px,100%);
+  min-height:640px;
+  background:rgba(255,255,255,.96);
+  border:1px solid rgba(255,255,255,.42);
+  border-radius:30px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:1.12fr .88fr;
+}
+.login-info{
+  position:relative;
+  padding:42px;
+  color:#fff;
+  background:
+    linear-gradient(145deg,rgba(7,17,31,.98),rgba(15,27,45,.96)),
+    radial-gradient(circle at 20% 20%,rgba(29,78,216,.60),transparent 38%);
   overflow:hidden;
 }
-.card:before{
+.login-info:before{
   content:"";
   position:absolute;
-  left:0;right:0;top:0;height:5px;
-  background:linear-gradient(90deg,var(--brand),var(--brand-2));
+  width:420px;height:420px;
+  right:-170px;bottom:-150px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,.34),transparent 68%);
 }
-.logo{
-  width:54px;height:54px;border-radius:16px;
-  background:linear-gradient(135deg,var(--brand),#2563eb 55%,var(--brand-2));
+.login-info:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);
+  background-size:34px 34px;
+  opacity:.38;
+  pointer-events:none;
+}
+.brand-row{position:relative;z-index:1;display:flex;align-items:center;gap:14px;margin-bottom:76px}
+.brand-mark{
+  width:48px;height:48px;border-radius:15px;
+  background:linear-gradient(135deg,#2563eb,#0f766e);
   display:flex;align-items:center;justify-content:center;
-  font-size:17px;font-weight:900;color:#fff;margin-bottom:24px;
-  letter-spacing:-.03em;box-shadow:0 14px 28px rgba(29,78,216,.28);
+  color:#fff;font-size:15px;font-weight:900;letter-spacing:-.04em;
+  box-shadow:0 18px 34px rgba(37,99,235,.30);
 }
-h1{font-size:25px;font-weight:900;letter-spacing:-.035em;margin-bottom:6px}
-.sub{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:2px}
-.divider{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:24px 0}
+.brand-name{font-size:17px;font-weight:850;letter-spacing:-.03em}
+.brand-sub{font-size:12px;color:#b9c7d8;margin-top:2px;font-weight:500}
+.hero{position:relative;z-index:1;max-width:500px}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  color:#bfdbfe;background:rgba(37,99,235,.16);border:1px solid rgba(147,197,253,.22);
+  border-radius:999px;padding:8px 12px;font-size:12px;font-weight:700;margin-bottom:20px;
+}
+.eyebrow:before{content:"";width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.14)}
+.hero h1{font-size:42px;line-height:1.06;letter-spacing:-.055em;font-weight:900;margin-bottom:18px}
+.hero p{font-size:15px;line-height:1.72;color:#c9d5e4;max-width:430px}
+.feature-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:46px;max-width:500px}
+.feature{
+  background:rgba(255,255,255,.075);
+  border:1px solid rgba(255,255,255,.11);
+  border-radius:18px;
+  padding:16px;
+  backdrop-filter:blur(8px);
+}
+.feature strong{display:block;font-size:13px;font-weight:800;margin-bottom:5px;color:#fff}
+.feature span{display:block;color:#b9c7d8;font-size:12px;line-height:1.45}
+.login-area{display:flex;align-items:center;justify-content:center;padding:48px;background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%)}
+.card{width:100%;max-width:390px}
+.card-top{margin-bottom:30px}
+.secure-badge{
+  width:58px;height:58px;border-radius:18px;
+  background:linear-gradient(135deg,var(--brand-soft),#ecfdf3);
+  border:1px solid #dbeafe;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:20px;
+}
+.secure-badge svg{width:28px;height:28px;color:var(--brand)}
+h2{font-size:27px;line-height:1.18;letter-spacing:-.04em;font-weight:900;margin-bottom:9px;color:var(--ink)}
+.sub{color:var(--muted);font-size:14px;line-height:1.58}
 .err{
+  display:flex;align-items:flex-start;gap:10px;
   background:var(--danger-bg);
-  border:1px solid #fecdca;
+  border:1px solid var(--danger-line);
   color:var(--danger);
-  border-radius:12px;
+  border-radius:14px;
   padding:12px 14px;
-  margin-bottom:18px;
+  margin:0 0 18px;
   font-size:13px;
+  line-height:1.45;
   font-weight:700;
 }
-label{
-  display:block;font-size:12px;font-weight:800;color:#344054;margin-bottom:7px;
-  letter-spacing:.01em;
-}
-.field{margin-bottom:17px}
+.err:before{content:"!";width:20px;height:20px;border-radius:50%;background:#fee4e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:900}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:12px;font-weight:800;color:#344054;margin-bottom:7px;letter-spacing:.01em}
+.input-wrap{position:relative}
+.input-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#98a2b3;pointer-events:none}
 input{
-  width:100%;background:#fff;border:1px solid #d0d5dd;color:var(--ink);
-  border-radius:12px;padding:12px 14px;font-size:14px;outline:none;font-family:inherit;
+  width:100%;height:48px;background:#fff;border:1.5px solid #d0d5dd;color:var(--ink);
+  border-radius:14px;padding:0 14px 0 44px;font-size:14px;outline:none;font-family:inherit;
   transition:border-color .15s,box-shadow .15s,background .15s;
 }
-input:focus{
-  border-color:#2563eb;
-  box-shadow:0 0 0 4px rgba(37,99,235,.13);
-}
+input::placeholder{color:#98a2b3}
+input:focus{border-color:#2563eb;box-shadow:0 0 0 4px rgba(37,99,235,.13)}
+.form-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 18px;color:#667085;font-size:12px}
+.status{display:inline-flex;align-items:center;gap:7px;font-weight:700;color:#475467}
+.status:before{content:"";width:7px;height:7px;border-radius:50%;background:#16a34a}
 button{
-  width:100%;border:none;border-radius:12px;padding:12px 16px;margin-top:10px;
-  background:linear-gradient(135deg,var(--brand),#2563eb);
-  color:#fff;font-size:14px;font-weight:800;cursor:pointer;
-  box-shadow:0 12px 24px rgba(29,78,216,.24);
+  width:100%;height:48px;border:none;border-radius:14px;
+  background:linear-gradient(135deg,#1d4ed8,#2563eb 58%,#0f766e);
+  color:#fff;font-size:14px;font-weight:850;cursor:pointer;
+  box-shadow:0 16px 28px rgba(29,78,216,.24);
   transition:transform .15s,box-shadow .15s,filter .15s;
 }
-button:hover{filter:brightness(.97);box-shadow:0 16px 30px rgba(29,78,216,.30)}
+button:hover{filter:brightness(.98);box-shadow:0 20px 36px rgba(29,78,216,.30)}
 button:active{transform:translateY(1px)}
-.foot{
-  text-align:center;color:#98a2b3;font-size:11px;margin-top:26px;
-  letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+.security-note{
+  margin-top:20px;
+  padding:14px 15px;
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:16px;
+  color:#667085;
+  font-size:12px;
+  line-height:1.55;
 }
-@media(max-width:520px){
-  body{padding:18px}
-  .card{padding:34px 24px 28px;border-radius:18px}
+.foot{margin-top:28px;color:#98a2b3;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;text-align:center}
+@media(max-width:900px){
+  body{padding:22px}
+  .login-shell{grid-template-columns:1fr;min-height:auto;border-radius:24px}
+  .login-info{display:none}
+  .login-area{padding:42px 24px}
+}
+@media(max-width:480px){
+  body{padding:14px}
+  .login-area{padding:30px 20px}
+  h2{font-size:24px}
 }
 </style></head>
 <body>
-<div class="card">
-  <div class="logo">GM</div>
-  <h1>Gazi Medya</h1>
-  <div class="sub">Lisans Yönetim Sistemi</div>
-  <div class="divider"></div>
-  {% if error %}<div class="err">{{ error }}</div>{% endif %}
-  <form method="POST">
-    <div class="field"><label>Kullanıcı Adı</label><input name="username" autocomplete="username" required autofocus></div>
-    <div class="field"><label>Şifre</label><input name="password" type="password" autocomplete="current-password" required></div>
-    <button type="submit">Oturum Aç</button>
-  </form>
-  <div class="foot">GAZİ MEDYA YAZILIM &copy; Kurumsal Lisans Platformu</div>
+<div class="login-shell">
+  <section class="login-info">
+    <div class="brand-row">
+      <div class="brand-mark">GM</div>
+      <div>
+        <div class="brand-name">Gazi Medya</div>
+        <div class="brand-sub">Kurumsal Yazılım Lisans Altyapısı</div>
+      </div>
+    </div>
+    <div class="hero">
+      <div class="eyebrow">Yönetici erişim alanı</div>
+      <h1>Lisans süreçlerinizi tek panelden yönetin.</h1>
+      <p>Ürün lisansları, müşteri kayıtları, doğrulama hareketleri ve yetkili işlemler için hazırlanmış güvenli yönetim ekranı.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature"><strong>Merkezi Kontrol</strong><span>Tüm ürün lisanslarını tek yönetim ekranında izleyin.</span></div>
+      <div class="feature"><strong>Güvenli Doğrulama</strong><span>Donanım ID ve lisans anahtarı eşleşmelerini takip edin.</span></div>
+      <div class="feature"><strong>İşlem Geçmişi</strong><span>Panel üzerinde yapılan kritik işlemleri kayıt altında tutun.</span></div>
+      <div class="feature"><strong>Kurumsal Kullanım</strong><span>Müşteri, paket ve süre yönetimini düzenli şekilde yürütün.</span></div>
+    </div>
+  </section>
+
+  <section class="login-area">
+    <div class="card">
+      <div class="card-top">
+        <div class="secure-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.55-2.9 8.64-7 10-4.1-1.36-7-5.45-7-10V6l7-3z" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 12.2l1.7 1.7 3.6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h2>Panele Giriş</h2>
+        <div class="sub">Lisans yönetim sistemine erişmek için yetkili kullanıcı bilgilerinizle oturum açın.</div>
+      </div>
+
+      {% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+      <form method="POST">
+        <div class="form-group">
+          <label>Kullanıcı Adı</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" stroke="currentColor" stroke-width="1.8"/></svg>
+            <input name="username" autocomplete="username" placeholder="Kullanıcı adınızı girin" required autofocus>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Şifre</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M7 11V8a5 5 0 0 1 10 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6.5 11h11A1.5 1.5 0 0 1 19 12.5v6A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-6A1.5 1.5 0 0 1 6.5 11z" stroke="currentColor" stroke-width="1.8"/></svg>
+            <input name="password" type="password" autocomplete="current-password" placeholder="Şifrenizi girin" required>
+          </div>
+        </div>
+        <div class="form-meta"><span class="status">Güvenli oturum</span><span>Yetkili erişim</span></div>
+        <button type="submit">Oturum Aç</button>
+      </form>
+
+      <div class="security-note">Bu alan yalnızca yetkili kullanıcılar içindir. Giriş işlemleri sistem güvenliği kapsamında kayıt altına alınır.</div>
+      <div class="foot">GAZİ MEDYA YAZILIM &copy; LİSANS YÖNETİM PLATFORMU</div>
+    </div>
+  </section>
 </div>
 </body></html>"""
-
 CHANGE_PASS_HTML = """<!DOCTYPE html>
 <html lang="tr">
 <head>
