@@ -1,5 +1,7 @@
-from flask import Flask, request, jsonify, render_template_string, redirect, session
+from flask import Flask, request, jsonify, render_template_string, redirect, session, Response, has_request_context
 import sqlite3
+import csv
+import io
 import hashlib
 import hmac
 import os
@@ -60,6 +62,20 @@ def init_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Eski veritabanlarıyla uyumlu kalmak için işlem geçmişine ek takip alanları sonradan eklenir.
+    # Mevcut kayıtlar bozulmaz; yeni kayıtlar daha detaylı tutulur.
+    for col in [
+        "username TEXT",
+        "ip_address TEXT",
+        "user_agent TEXT",
+        "path TEXT",
+        "method TEXT",
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE audit_log ADD COLUMN {col}")
+            conn.commit()
+        except Exception:
+            pass
     existing = conn.execute("SELECT value FROM admin_settings WHERE key='admin_pass_hash'").fetchone()
     if not existing:
         h = hashlib.sha256("GaziMedia2026!".encode()).hexdigest()
@@ -176,8 +192,25 @@ def get_admin():
 
 
 def log(action, detail=""):
+    username = ""
+    ip_address = ""
+    user_agent = ""
+    path = ""
+    method = ""
+    if has_request_context():
+        username = session.get("admin_user", "") or request.form.get("username", "")
+        ip_address = (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip())[:80]
+        user_agent = (request.headers.get("User-Agent", "") or "")[:250]
+        path = (request.path or "")[:160]
+        method = (request.method or "")[:16]
     conn = get_db()
-    conn.execute("INSERT INTO audit_log (action,detail) VALUES (?,?)", (action, detail))
+    conn.execute(
+        """
+        INSERT INTO audit_log (action,detail,username,ip_address,user_agent,path,method)
+        VALUES (?,?,?,?,?,?,?)
+        """,
+        (action, detail, username, ip_address, user_agent, path, method),
+    )
     conn.commit()
     conn.close()
 
@@ -241,6 +274,7 @@ def login():
         given = hashlib.sha256(request.form.get("password","").encode()).hexdigest()
         if request.form.get("username","") == admin_user and given == admin_hash:
             session["logged_in"] = True
+            session["admin_user"] = admin_user
             log("GİRİŞ", f"Kullanıcı: {admin_user}")
             return redirect("/")
         err = "Kullanıcı adı veya şifre hatalı"
@@ -278,6 +312,132 @@ def change_password():
             log("ŞİFRE DEĞİŞTİRİLDİ")
             msg = "Şifre başarıyla güncellendi"
     return render_template_string(CHANGE_PASS_HTML, msg=msg, err=err)
+
+
+
+def _sidebar_stats(conn):
+    now = datetime.now().isoformat()
+    soon = (datetime.now() + timedelta(days=30)).isoformat()
+    return {
+        "total":         conn.execute("SELECT COUNT(*) FROM licenses").fetchone()[0],
+        "active":        conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=0 AND expires_at>?", (now,)).fetchone()[0],
+        "expired":       conn.execute("SELECT COUNT(*) FROM licenses WHERE expires_at<? AND is_revoked=0", (now,)).fetchone()[0],
+        "revoked":       conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=1").fetchone()[0],
+        "expiring":      conn.execute("SELECT COUNT(*) FROM licenses WHERE is_revoked=0 AND expires_at>? AND expires_at<?", (now, soon)).fetchone()[0],
+        "hr_count":      conn.execute("SELECT COUNT(*) FROM licenses WHERE product='gazi-hr'").fetchone()[0],
+        "asc_count":     conn.execute("SELECT COUNT(*) FROM licenses WHERE product='autoservis-crm'").fetchone()[0],
+        "ft_count":      conn.execute("SELECT COUNT(*) FROM licenses WHERE product='fiyat-teklifi'").fetchone()[0],
+        "eta_count":     conn.execute("SELECT COUNT(*) FROM licenses WHERE product='eta-analitik'").fetchone()[0],
+        "kkdik_count":   conn.execute("SELECT COUNT(*) FROM licenses WHERE product='kkdik'").fetchone()[0],
+        "etanom_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-teklif'").fetchone()[0],
+        "fatura_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-fatura'").fetchone()[0],
+    }
+
+
+def _audit_filters():
+    q = request.args.get("q", "").strip()
+    action = request.args.get("action", "all").strip()
+    date_from = request.args.get("date_from", "").strip()
+    date_to = request.args.get("date_to", "").strip()
+    where = []
+    params = []
+    if q:
+        like = f"%{q}%"
+        where.append("(action LIKE ? OR detail LIKE ? OR username LIKE ? OR ip_address LIKE ? OR path LIKE ? OR method LIKE ?)")
+        params.extend([like, like, like, like, like, like])
+    if action and action != "all":
+        where.append("action=?")
+        params.append(action)
+    if date_from:
+        where.append("created_at>=?")
+        params.append(date_from + " 00:00:00")
+    if date_to:
+        where.append("created_at<=?")
+        params.append(date_to + " 23:59:59")
+    sql_where = (" WHERE " + " AND ".join(where)) if where else ""
+    return sql_where, params, {"q": q, "action": action, "date_from": date_from, "date_to": date_to}
+
+
+@app.route("/audit-log")
+@auth
+def audit_log_page():
+    conn = get_db()
+    stats = _sidebar_stats(conn)
+    sql_where, params, filters = _audit_filters()
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except Exception:
+        page = 1
+    try:
+        per_page = int(request.args.get("per_page", 50))
+    except Exception:
+        per_page = 50
+    per_page = min(max(per_page, 25), 200)
+    total_filtered = conn.execute(f"SELECT COUNT(*) FROM audit_log{sql_where}", params).fetchone()[0]
+    offset = (page - 1) * per_page
+    logs = conn.execute(
+        f"""
+        SELECT * FROM audit_log
+        {sql_where}
+        ORDER BY created_at DESC, id DESC
+        LIMIT ? OFFSET ?
+        """,
+        params + [per_page, offset],
+    ).fetchall()
+    actions = conn.execute("SELECT DISTINCT action FROM audit_log WHERE action IS NOT NULL AND action<>'' ORDER BY action").fetchall()
+    today = datetime.now().strftime("%Y-%m-%d")
+    audit_stats = {
+        "total": conn.execute("SELECT COUNT(*) FROM audit_log").fetchone()[0],
+        "today": conn.execute("SELECT COUNT(*) FROM audit_log WHERE created_at LIKE ?", (today + "%",)).fetchone()[0],
+        "license_ops": conn.execute("SELECT COUNT(*) FROM audit_log WHERE action LIKE 'LİSANS%'").fetchone()[0],
+        "failed_login": conn.execute("SELECT COUNT(*) FROM audit_log WHERE action='BAŞARISIZ GİRİŞ'").fetchone()[0],
+    }
+    conn.close()
+    pages = max(1, (total_filtered + per_page - 1) // per_page)
+    return render_template_string(
+        AUDIT_HTML,
+        logs=logs,
+        actions=actions,
+        filters=filters,
+        stats=stats,
+        audit_stats=audit_stats,
+        total_filtered=total_filtered,
+        page=page,
+        pages=pages,
+        per_page=per_page,
+        products=PRODUCTS,
+    )
+
+
+@app.route("/audit-log/export")
+@auth
+def audit_log_export():
+    conn = get_db()
+    sql_where, params, _ = _audit_filters()
+    rows = conn.execute(
+        f"""
+        SELECT id, created_at, action, detail, username, ip_address, method, path, user_agent
+        FROM audit_log
+        {sql_where}
+        ORDER BY created_at DESC, id DESC
+        """,
+        params,
+    ).fetchall()
+    conn.close()
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["ID", "Tarih", "İşlem", "Detay", "Kullanıcı", "IP", "Metot", "Yol", "Tarayıcı"])
+    for r in rows:
+        writer.writerow([
+            r["id"], r["created_at"], r["action"], r["detail"], r["username"],
+            r["ip_address"], r["method"], r["path"], r["user_agent"],
+        ])
+    filename = f"islem-gecmisi-{datetime.now().strftime('%Y%m%d-%H%M')}.csv"
+    return Response(
+        out.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 # ── Panel routes ──────────────────────────────────────────────────────────────
@@ -1059,9 +1219,14 @@ td.col-cust{max-width:190px}
       <a href="/?product=etanom-teklif" class="nav-link {{ 'on' if prod_filter=='etanom-teklif' else '' }}"><span class="lbl"><span class="badge badge-etk">ET</span>Etanom Teklif</span><span class="cnt">{{ stats.etanom_count }}</span></a>
       <a href="/?product=etanom-fatura" class="nav-link {{ 'on' if prod_filter=='etanom-fatura' else '' }}"><span class="lbl"><span class="badge badge-etf">EF</span>Etanom Fatura</span><span class="cnt">{{ stats.fatura_count }}</span></a>
     </div>
+    <div class="side-section">
+      <div class="side-label">Yönetim</div>
+      <a href="/audit-log" class="nav-link"><span class="lbl"><span class="badge badge-all">LOG</span>İşlem Geçmişi</span></a>
+    </div>
     <div class="side-spacer"></div>
     <div class="side-log">
       <div class="side-label">Son İşlemler</div>
+      <a href="/audit-log" class="nav-link" style="margin:0 0 8px 0"><span class="lbl"><span class="badge badge-all">TÜM</span>Tüm geçmişi aç</span></a>
       <div class="list">
         {% for lg in logs %}
         <div class="log-item">
@@ -1092,7 +1257,10 @@ td.col-cust{max-width:190px}
           {% else %}Tüm ürün portföyünüzdeki lisansları buradan yönetin.{% endif %}
         </p>
       </div>
-      <button class="btn btn-main" type="button" onclick="openM('yeniLisans')">+ Yeni Lisans Ekle</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn btn-muted" href="/audit-log">İşlem Geçmişi</a>
+        <button class="btn btn-main" type="button" onclick="openM('yeniLisans')">+ Yeni Lisans Ekle</button>
+      </div>
     </div>
 
     <div class="stats">
@@ -1327,6 +1495,110 @@ function closeM(id){const el=document.getElementById(id);if(el)el.classList.remo
 function copyText(text){navigator.clipboard.writeText(text).then(()=>{const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);});}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'));});
 </script>
+</body></html>"""
+
+
+AUDIT_HTML = """<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İşlem Geçmişi | Gazi Medya Lisans Paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden;width:100%}
+:root{--bg:#f5f7fb;--card:#ffffff;--line:#e5e7eb;--line2:#cbd5e1;--text:#111827;--muted:#64748b;--muted2:#94a3b8;--nav:#0f172a;--nav2:#111c33;--nav-line:#233150;--accent:#2563eb;--accent-d:#1d4ed8;--accent-bg:#eff6ff;--green:#15803d;--green-bg:#ecfdf5;--amber:#b45309;--amber-bg:#fffbeb;--red:#b91c1c;--red-bg:#fef2f2;--radius:14px;--sidebar-w:268px}
+body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Roboto',Arial,sans-serif;-webkit-font-smoothing:antialiased}.shell{display:flex;min-height:100vh;min-width:0}.sidebar{width:var(--sidebar-w);flex-shrink:0;background:linear-gradient(180deg,var(--nav),var(--nav2));border-right:1px solid var(--nav-line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}.side-brand{display:flex;align-items:center;gap:12px;padding:22px 18px 18px}.side-brand .b{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#60a5fa,#2563eb);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff}.side-brand h1{font-size:14px;font-weight:900;color:#fff}.side-brand small{display:block;color:#93a4bd;font-size:11px;margin-top:2px}.side-section{padding:8px 12px 4px}.side-label{font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;color:#74849d;padding:12px 12px 8px}.nav-link{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#dbeafe;text-decoration:none;font-size:12.5px;font-weight:700;padding:9px 10px;border-radius:10px;margin-bottom:3px;transition:background .12s,color .12s}.nav-link:hover{background:rgba(255,255,255,.07)}.nav-link.on{background:#fff;color:#1e3a8a}.nav-link .lbl{display:flex;align-items:center;gap:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.badge{min-width:24px;height:22px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff}.badge-all{background:#475569}.badge-hr{background:#2563eb}.badge-asc{background:#ea580c}.badge-ft{background:#16a34a}.badge-eta{background:#7c3aed}.badge-kkdik{background:#0891b2}.badge-etk{background:#d97706}.badge-etf{background:#dc2626}.nav-link .cnt{background:rgba(255,255,255,.10);color:#cbd5e1;font-size:10px;font-weight:900;padding:2px 7px;border-radius:999px}.nav-link.on .cnt{background:#dbeafe;color:#1d4ed8}.side-spacer{flex:1}.side-foot{padding:12px;border-top:1px solid var(--nav-line)}.side-foot a{display:flex;align-items:center;gap:8px;color:#dbeafe;text-decoration:none;font-size:12.5px;font-weight:700;padding:9px 10px;border-radius:10px}.side-foot a:hover{background:rgba(255,255,255,.07)}.main{flex:1;min-width:0;padding:28px 32px 42px;max-width:100%}.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:0 10px 30px rgba(15,23,42,.04)}.topbar h2{font-size:24px;font-weight:900;letter-spacing:-.03em;margin-bottom:7px}.topbar p{color:var(--muted);font-size:13.5px;max-width:720px;line-height:1.55}.btn{border:none;border-radius:10px;padding:10px 15px;font-size:13px;font-weight:900;cursor:pointer;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:filter .12s,transform .12s;white-space:nowrap}.btn:hover{filter:brightness(.95)}.btn:active{transform:translateY(1px)}.btn-main{background:var(--accent)}.btn-muted{background:#475569}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px 18px;min-width:0;box-shadow:0 10px 30px rgba(15,23,42,.035)}.stat .k{color:var(--muted);font-size:11px;margin-bottom:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.stat .v{font-size:28px;font-weight:900;letter-spacing:-.03em}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-width:0;box-shadow:0 10px 30px rgba(15,23,42,.04)}.card-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}.card-head h3{font-size:15px;font-weight:900}.note{font-size:12px;color:var(--muted)}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);align-items:end}label{display:block;font-size:11.5px;font-weight:900;color:#334155;margin-bottom:6px}input,select{width:100%;background:#fff;border:1.5px solid #cbd5e1;color:var(--text);border-radius:10px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(37,99,235,.12)}.table-wrap{overflow-x:auto;max-width:100%}table{width:100%;border-collapse:collapse;table-layout:auto}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:top}th{color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:900;background:#f8fafc;white-space:nowrap}tbody tr:hover td{background:#f8fafc}.mono{font-family:'Roboto Mono',ui-monospace,Consolas,monospace;font-size:11px}.detail{max-width:420px;line-height:1.45;color:#334155}.path{max-width:220px;word-break:break-word;color:#475569}.ua{max-width:280px;word-break:break-word;color:#64748b;font-size:11px}.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}.pill::before{content:"";width:6px;height:6px;border-radius:50%;flex-shrink:0}.p-green{background:var(--green-bg);color:var(--green)}.p-green::before{background:var(--green)}.p-amber{background:var(--amber-bg);color:var(--amber)}.p-amber::before{background:var(--amber)}.p-red{background:var(--red-bg);color:var(--red)}.p-red::before{background:var(--red)}.p-blue{background:var(--accent-bg);color:var(--accent-d)}.p-blue::before{background:var(--accent)}.pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:16px 20px}.pagination .page-text{font-size:12.5px;color:var(--muted);font-weight:700}.pagination .pager{display:flex;gap:8px}.empty{padding:36px;color:var(--muted);text-align:center}@media(max-width:1180px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.filters{grid-template-columns:1fr 1fr}}@media(max-width:980px){.sidebar{display:none}.main{padding:20px}}@media(max-width:700px){.main{padding:14px}.stats{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.topbar{padding:18px}.btn{width:100%}.topbar>div:last-child{width:100%}}
+</style></head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="side-brand"><div class="b">GM</div><div><h1>Gazi Medya</h1><small>Lisans Paneli</small></div></div>
+    <div class="side-section">
+      <div class="side-label">Ürünler</div>
+      <a href="/?product=all" class="nav-link"><span class="lbl"><span class="badge badge-all">TÜM</span>Tümü</span><span class="cnt">{{ stats.total }}</span></a>
+      <a href="/?product=gazi-hr" class="nav-link"><span class="lbl"><span class="badge badge-hr">HR</span>Gazi HR</span><span class="cnt">{{ stats.hr_count }}</span></a>
+      <a href="/?product=autoservis-crm" class="nav-link"><span class="lbl"><span class="badge badge-asc">AS</span>AutoServis</span><span class="cnt">{{ stats.asc_count }}</span></a>
+      <a href="/?product=fiyat-teklifi" class="nav-link"><span class="lbl"><span class="badge badge-ft">FT</span>Fiyat Teklifi</span><span class="cnt">{{ stats.ft_count }}</span></a>
+      <a href="/?product=eta-analitik" class="nav-link"><span class="lbl"><span class="badge badge-eta">EA</span>ETA Analitik</span><span class="cnt">{{ stats.eta_count }}</span></a>
+      <a href="/?product=kkdik" class="nav-link"><span class="lbl"><span class="badge badge-kkdik">KK</span>KKDİK Suite</span><span class="cnt">{{ stats.kkdik_count }}</span></a>
+      <a href="/?product=etanom-teklif" class="nav-link"><span class="lbl"><span class="badge badge-etk">ET</span>Etanom Teklif</span><span class="cnt">{{ stats.etanom_count }}</span></a>
+      <a href="/?product=etanom-fatura" class="nav-link"><span class="lbl"><span class="badge badge-etf">EF</span>Etanom Fatura</span><span class="cnt">{{ stats.fatura_count }}</span></a>
+    </div>
+    <div class="side-section">
+      <div class="side-label">Yönetim</div>
+      <a href="/audit-log" class="nav-link on"><span class="lbl"><span class="badge badge-all">LOG</span>İşlem Geçmişi</span></a>
+    </div>
+    <div class="side-spacer"></div>
+    <div class="side-foot"><a href="/change-password">Şifre Değiştir</a><a href="/logout">Çıkış Yap</a></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h2>İşlem Geçmişi</h2>
+        <p>Panel üzerinde yapılan giriş, lisans oluşturma, düzenleme, süre uzatma, iptal, silme ve şifre işlemlerini detaylı şekilde takip edin.</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn btn-muted" href="/">Panele Dön</a>
+        <a class="btn btn-main" href="/audit-log/export?q={{ filters.q }}&action={{ filters.action }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}">CSV Dışa Aktar</a>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Toplam Kayıt</div><div class="v">{{ audit_stats.total }}</div></div>
+      <div class="stat"><div class="k">Bugünkü İşlem</div><div class="v">{{ audit_stats.today }}</div></div>
+      <div class="stat"><div class="k">Lisans İşlemi</div><div class="v">{{ audit_stats.license_ops }}</div></div>
+      <div class="stat"><div class="k">Başarısız Giriş</div><div class="v">{{ audit_stats.failed_login }}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Detaylı Kayıtlar</h3><div class="note">{{ total_filtered }} kayıt eşleşti</div></div>
+      <form class="filters" method="GET" action="/audit-log">
+        <div><label>Arama</label><input name="q" value="{{ filters.q }}" placeholder="İşlem, detay, kullanıcı, IP veya yol ara..."></div>
+        <div><label>İşlem Tipi</label><select name="action"><option value="all">Tüm İşlemler</option>{% for a in actions %}<option value="{{ a.action }}" {{ 'selected' if filters.action==a.action else '' }}>{{ a.action }}</option>{% endfor %}</select></div>
+        <div><label>Başlangıç</label><input type="date" name="date_from" value="{{ filters.date_from }}"></div>
+        <div><label>Bitiş</label><input type="date" name="date_to" value="{{ filters.date_to }}"></div>
+        <div><button class="btn btn-main" type="submit">Filtrele</button></div>
+      </form>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Tarih</th><th>İşlem</th><th>Detay</th><th>Kullanıcı</th><th>IP</th><th>Metot</th><th>Yol</th><th>Tarayıcı</th></tr></thead>
+          <tbody>
+            {% for lg in logs %}
+            <tr>
+              <td class="mono">#{{ lg.id }}</td>
+              <td class="mono">{{ lg.created_at }}</td>
+              <td>
+                {% if 'BAŞARISIZ' in (lg.action or '') %}<span class="pill p-red">{{ lg.action }}</span>
+                {% elif 'GİRİŞ' in (lg.action or '') or 'ÇIKIŞ' in (lg.action or '') %}<span class="pill p-blue">{{ lg.action }}</span>
+                {% elif 'LİSANS' in (lg.action or '') %}<span class="pill p-green">{{ lg.action }}</span>
+                {% else %}<span class="pill p-amber">{{ lg.action or '-' }}</span>{% endif %}
+              </td>
+              <td class="detail">{{ lg.detail or '-' }}</td>
+              <td>{{ lg.username or '-' }}</td>
+              <td class="mono">{{ lg.ip_address or '-' }}</td>
+              <td class="mono">{{ lg.method or '-' }}</td>
+              <td class="path">{{ lg.path or '-' }}</td>
+              <td class="ua">{{ lg.user_agent or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="9" class="empty">Seçili filtrelerle eşleşen işlem kaydı bulunamadı.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <div class="page-text">Sayfa {{ page }} / {{ pages }} · Sayfa başına {{ per_page }} kayıt</div>
+        <div class="pager">
+          {% if page > 1 %}<a class="btn btn-muted" href="/audit-log?q={{ filters.q }}&action={{ filters.action }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&page={{ page-1 }}&per_page={{ per_page }}">Önceki</a>{% endif %}
+          {% if page < pages %}<a class="btn btn-main" href="/audit-log?q={{ filters.q }}&action={{ filters.action }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&page={{ page+1 }}&per_page={{ per_page }}">Sonraki</a>{% endif %}
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
 </body></html>"""
 
 
