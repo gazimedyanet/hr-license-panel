@@ -458,7 +458,7 @@ def audit_log_export():
     ).fetchall()
     conn.close()
     out = io.StringIO()
-    writer = csv.writer(out)
+    writer = csv.writer(out, delimiter=";")
     writer.writerow(["ID", "Tarih", "İşlem", "Detay", "Kullanıcı", "IP", "Metot", "Yol", "Tarayıcı"])
     for r in rows:
         writer.writerow([
@@ -467,7 +467,7 @@ def audit_log_export():
         ])
     filename = f"islem-gecmisi-{datetime.now().strftime('%Y%m%d-%H%M')}.csv"
     return Response(
-        out.getvalue(),
+        "\ufeff" + out.getvalue(),
         mimetype="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
