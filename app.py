@@ -48,6 +48,27 @@ def init_db():
             conn.commit()
         except Exception:
             pass
+
+    # Lisans bazlı takip alanları: eski veritabanlarını bozmadan sonradan eklenir.
+    # Böylece hangi lisansın ne zaman ve kim tarafından oluşturulduğu / aktifleştirildiği /
+    # uzatıldığı / iptal edildiği detay ekranında ve Excel çıktısında izlenebilir.
+    for col in [
+        "created_by TEXT",
+        "activated_at TEXT",
+        "activated_by TEXT",
+        "activated_ip TEXT",
+        "extended_at TEXT",
+        "extended_by TEXT",
+        "updated_at TEXT",
+        "updated_by TEXT",
+        "revoked_at TEXT",
+        "revoked_by TEXT",
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE licenses ADD COLUMN {col}")
+            conn.commit()
+        except Exception:
+            pass
     conn.execute("""
         CREATE TABLE IF NOT EXISTS admin_settings (
             key TEXT PRIMARY KEY,
@@ -191,6 +212,18 @@ def get_admin():
     return (u[0] if u else "gazi"), (p[0] if p else "")
 
 
+def _current_admin_user() -> str:
+    if has_request_context():
+        return (session.get("admin_user", "") or request.form.get("username", "") or "sistem")[:80]
+    return "sistem"
+
+
+def _client_ip() -> str:
+    if has_request_context():
+        return (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip())[:80]
+    return ""
+
+
 def log(action, detail=""):
     username = ""
     ip_address = ""
@@ -198,8 +231,8 @@ def log(action, detail=""):
     path = ""
     method = ""
     if has_request_context():
-        username = session.get("admin_user", "") or request.form.get("username", "")
-        ip_address = (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip())[:80]
+        username = _current_admin_user()
+        ip_address = _client_ip()
         user_agent = (request.headers.get("User-Agent", "") or "")[:250]
         path = (request.path or "")[:160]
         method = (request.method or "")[:16]
@@ -440,6 +473,98 @@ def audit_log_export():
     )
 
 
+def _license_filters():
+    q = request.args.get("q", "").strip()
+    status = request.args.get("status", "all").strip()
+    product = request.args.get("product", "all").strip()
+    now_iso = datetime.now().isoformat()
+    soon_iso = (datetime.now() + timedelta(days=30)).isoformat()
+    where = []
+    params = []
+    if product and product != "all" and product in PRODUCTS:
+        where.append("product=?")
+        params.append(product)
+    if q:
+        like = f"%{q}%"
+        where.append(
+            "(customer_name LIKE ? OR customer_email LIKE ? OR customer_phone LIKE ? OR "
+            "license_key LIKE ? OR hw_id LIKE ? OR notes LIKE ? OR package LIKE ? OR product LIKE ?)"
+        )
+        params.extend([like, like, like, like, like, like, like, like])
+    if status == "active":
+        where.append("is_revoked=0 AND expires_at>?")
+        params.append(now_iso)
+    elif status == "expired":
+        where.append("is_revoked=0 AND expires_at<=?")
+        params.append(now_iso)
+    elif status == "revoked":
+        where.append("is_revoked=1")
+    elif status == "expiring":
+        where.append("is_revoked=0 AND expires_at>? AND expires_at<?")
+        params.extend([now_iso, soon_iso])
+    sql_where = (" WHERE " + " AND ".join(where)) if where else ""
+    return sql_where, params, {"q": q, "status": status, "product": product}
+
+
+@app.route("/licenses/export")
+@auth
+def licenses_export():
+    conn = get_db()
+    sql_where, params, filters = _license_filters()
+    rows = conn.execute(
+        f"""
+        SELECT *
+        FROM licenses
+        {sql_where}
+        ORDER BY issued_at DESC, id DESC
+        """,
+        params,
+    ).fetchall()
+    conn.close()
+
+    out = io.StringIO()
+    writer = csv.writer(out, delimiter=";")
+    writer.writerow([
+        "ID", "Ürün", "Müşteri/Firma", "E-posta", "Telefon", "Paket",
+        "HW ID", "Lisans Anahtarı", "Durum", "Oluşturulma Tarihi", "Oluşturan",
+        "Aktifleştirme Tarihi", "Aktifleştiren", "Aktifleştirme IP",
+        "Son Geçerlilik", "Son Görülme", "Doğrulama Sayısı",
+        "Son Uzatma", "Uzatan", "Son Güncelleme", "Güncelleyen",
+        "İptal Tarihi", "İptal Eden", "İptal Sebebi", "Not"
+    ])
+    now_iso = datetime.now().isoformat()
+    for r in rows:
+        product_label = PRODUCTS.get(r["product"] or "gazi-hr", PRODUCTS["gazi-hr"])["label"]
+        if r["is_revoked"]:
+            status_text = "İptal"
+        elif (r["expires_at"] or "") <= now_iso:
+            status_text = "Dolmuş"
+        else:
+            status_text = "Aktif"
+        writer.writerow([
+            r["id"], product_label, r["customer_name"] or "", r["customer_email"] or "",
+            r["customer_phone"] or "", r["package"] or "", r["hw_id"] or "",
+            r["license_key"] or "", status_text, r["issued_at"] or "", r["created_by"] or "",
+            r["activated_at"] or "", r["activated_by"] or "", r["activated_ip"] or "",
+            r["expires_at"] or "", r["last_seen"] or "", r["verify_count"] or 0,
+            r["extended_at"] or "", r["extended_by"] or "", r["updated_at"] or "", r["updated_by"] or "",
+            r["revoked_at"] or "", r["revoked_by"] or "", r["revoke_reason"] or "", r["notes"] or "",
+        ])
+
+    suffix = []
+    if filters["product"] and filters["product"] != "all":
+        suffix.append(filters["product"])
+    if filters["status"] and filters["status"] != "all":
+        suffix.append(filters["status"])
+    suffix_txt = ("-" + "-".join(suffix)) if suffix else ""
+    filename = f"lisanslar{suffix_txt}-{datetime.now().strftime('%Y%m%d-%H%M')}.csv"
+    return Response(
+        "\ufeff" + out.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 # ── Panel routes ──────────────────────────────────────────────────────────────
 @app.route("/")
 @auth
@@ -513,8 +638,16 @@ def create():
     key = gen_key(hw_id, expires, product)
     try:
         conn.execute(
-            "INSERT INTO licenses (license_key,hw_id,product,customer_name,customer_email,customer_phone,expires_at,notes,package) VALUES(?,?,?,?,?,?,?,?,?)",
-            (key, hw_id, product, customer, email, phone, expires, notes, package),
+            """
+            INSERT INTO licenses (
+                license_key, hw_id, product, customer_name, customer_email, customer_phone,
+                expires_at, notes, package, created_by, activated_at, activated_by, activated_ip
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                key, hw_id, product, customer, email, phone, expires, notes, package,
+                _current_admin_user(), now_iso, _current_admin_user(), _client_ip()
+            ),
         )
         conn.commit()
         log("LİSANS OLUŞTURULDU", f"{customer or '?'} | {PRODUCTS[product]['label']} | {expires[:10]}")
@@ -538,10 +671,30 @@ def extend(lid):
         new_exp = cur + timedelta(days=days)
         product = lic["product"] or "gazi-hr"
         new_key = gen_key(lic["hw_id"], new_exp.isoformat(), product)
-        conn.execute("UPDATE licenses SET license_key=?, expires_at=?, is_revoked=0, revoke_reason=NULL WHERE id=?",
-                     (new_key, new_exp.isoformat(), lid))
+        now_action = datetime.now().isoformat()
+        user_action = _current_admin_user()
+        if lic["is_revoked"] or datetime.fromisoformat(lic["expires_at"]) < datetime.now():
+            conn.execute(
+                """
+                UPDATE licenses
+                SET license_key=?, expires_at=?, is_revoked=0, revoke_reason=NULL,
+                    extended_at=?, extended_by=?, activated_at=?, activated_by=?, activated_ip=?
+                WHERE id=?
+                """,
+                (new_key, new_exp.isoformat(), now_action, user_action, now_action, user_action, _client_ip(), lid),
+            )
+        else:
+            conn.execute(
+                """
+                UPDATE licenses
+                SET license_key=?, expires_at=?, is_revoked=0, revoke_reason=NULL,
+                    extended_at=?, extended_by=?
+                WHERE id=?
+                """,
+                (new_key, new_exp.isoformat(), now_action, user_action, lid),
+            )
         conn.commit()
-        log("LİSANS UZATILDI", f"ID:{lid} | {lic['customer_name'] or '-'} | +{days} gün | {new_exp.strftime('%d.%m.%Y')}")
+        log("LİSANS UZATILDI", f"ID:{lid} | {lic['customer_name'] or '-'} | +{days} gün | {new_exp.strftime('%d.%m.%Y')} | Kullanıcı:{user_action}")
     conn.close()
     return redirect("/")
 
@@ -552,10 +705,15 @@ def revoke(lid):
     reason = request.form.get("reason","").strip()
     conn = get_db()
     lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
-    conn.execute("UPDATE licenses SET is_revoked=1, revoke_reason=? WHERE id=?", (reason, lid))
+    now_action = datetime.now().isoformat()
+    user_action = _current_admin_user()
+    conn.execute(
+        "UPDATE licenses SET is_revoked=1, revoke_reason=?, revoked_at=?, revoked_by=? WHERE id=?",
+        (reason, now_action, user_action, lid),
+    )
     conn.commit()
     conn.close()
-    log("LİSANS İPTAL", f"ID:{lid} | {lic['customer_name'] if lic else ''} | {reason or 'Sebep yok'}")
+    log("LİSANS İPTAL", f"ID:{lid} | {lic['customer_name'] if lic else ''} | {reason or 'Sebep yok'} | Kullanıcı:{user_action}")
     return redirect("/")
 
 
@@ -564,10 +722,19 @@ def revoke(lid):
 def restore(lid):
     conn = get_db()
     lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
-    conn.execute("UPDATE licenses SET is_revoked=0, revoke_reason=NULL WHERE id=?", (lid,))
+    now_action = datetime.now().isoformat()
+    user_action = _current_admin_user()
+    conn.execute(
+        """
+        UPDATE licenses
+        SET is_revoked=0, revoke_reason=NULL, activated_at=?, activated_by=?, activated_ip=?
+        WHERE id=?
+        """,
+        (now_action, user_action, _client_ip(), lid),
+    )
     conn.commit()
     conn.close()
-    log("LİSANS AKTİFLEŞTİRİLDİ", f"ID:{lid} | {lic['customer_name'] if lic else ''}")
+    log("LİSANS AKTİFLEŞTİRİLDİ", f"ID:{lid} | {lic['customer_name'] if lic else ''} | Kullanıcı:{user_action}")
     return redirect("/")
 
 
@@ -578,13 +745,23 @@ def edit(lid):
     lic = conn.execute("SELECT * FROM licenses WHERE id=?", (lid,)).fetchone()
     if lic:
         pkg = request.form.get("package","enterprise").strip()
+        now_action = datetime.now().isoformat()
+        user_action = _current_admin_user()
         conn.execute(
-            "UPDATE licenses SET customer_name=?, customer_email=?, customer_phone=?, notes=?, package=? WHERE id=?",
-            (request.form.get("customer_name","").strip(), request.form.get("customer_email","").strip(),
-             request.form.get("customer_phone","").strip(), request.form.get("notes","").strip(), pkg, lid),
+            """
+            UPDATE licenses
+            SET customer_name=?, customer_email=?, customer_phone=?, notes=?, package=?,
+                updated_at=?, updated_by=?
+            WHERE id=?
+            """,
+            (
+                request.form.get("customer_name","").strip(), request.form.get("customer_email","").strip(),
+                request.form.get("customer_phone","").strip(), request.form.get("notes","").strip(), pkg,
+                now_action, user_action, lid
+            ),
         )
         conn.commit()
-        log("LİSANS DÜZENLENDİ", f"ID:{lid} | Paket:{pkg}")
+        log("LİSANS DÜZENLENDİ", f"ID:{lid} | Paket:{pkg} | Kullanıcı:{user_action}")
     conn.close()
     return redirect("/")
 
@@ -1187,6 +1364,8 @@ td.col-cust{max-width:190px}
 }
 .modal-close:hover{background:#e4e7ec;color:#101828}
 .modal-body{padding:21px;overflow-y:auto}
+.info-section{margin:16px 0 6px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;font-weight:900;color:#667085;text-transform:uppercase;letter-spacing:.08em}
+.info-section:first-child{margin-top:0;padding-top:0;border-top:none}
 .info-row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px}
 .info-row:last-child{border-bottom:none}
 .info-row .ik{color:var(--muted);font-weight:900;flex-shrink:0}
@@ -1259,6 +1438,7 @@ td.col-cust{max-width:190px}
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <a class="btn btn-muted" href="/audit-log">İşlem Geçmişi</a>
+        <button class="btn btn-green" type="button" onclick="exportLicenses()">Excel'e Aktar</button>
         <button class="btn btn-main" type="button" onclick="openM('yeniLisans')">+ Yeni Lisans Ekle</button>
       </div>
     </div>
@@ -1287,6 +1467,7 @@ td.col-cust{max-width:190px}
           <button class="ftab" type="button" onclick="setF('active',this)">Aktif</button>
           <button class="ftab" type="button" onclick="setF('expired',this)">Dolmuş</button>
           <button class="ftab" type="button" onclick="setF('revoked',this)">İptal</button>
+          <button class="ftab" type="button" onclick="exportLicenses()">Excel</button>
         </div>
       </div>
       <div class="card-body table-wrap" style="padding:0">
@@ -1300,7 +1481,7 @@ td.col-cust{max-width:190px}
             {% for l in licenses %}
             {% set is_exp = l.expires_at < now %}
             {% set status = 'revoked' if l.is_revoked else ('expired' if is_exp else 'active') %}
-            <tr data-s="{{ status }}" data-q="{{ ((l.customer_name or '')~' '~(l.customer_email or '')~' '~l.license_key~' '~l.hw_id)|lower }}">
+            <tr data-s="{{ status }}" data-q="{{ ((l.customer_name or '')~' '~(l.customer_email or '')~' '~(l.customer_phone or '')~' '~(l.license_key or '')~' '~(l.hw_id or '')~' '~(l.notes or '')~' '~(l.package or ''))|lower }}">
               <td class="col-id">{{ l.id }}</td>
               <td class="col-cust"><span class="custname" title="{{ l.customer_name or '-' }}">{{ l.customer_name or '-' }}</span></td>
               <td><span class="kbox" onclick="copyText('{{ l.hw_id }}')" title="Kopyala">{{ l.hw_id }}</span></td>
@@ -1411,6 +1592,7 @@ td.col-cust{max-width:190px}
   <div class="modal-box">
     <div class="modal-head"><h4>Lisans Detayı &middot; #{{ l.id }}</h4><button class="modal-close" type="button" onclick="closeM('detay{{ l.id }}')">&times;</button></div>
     <div class="modal-body">
+      <div class="info-section">Lisans Bilgileri</div>
       <div class="info-row"><div class="ik">Ürün</div><div class="iv">
         {% if prod=='autoservis-crm' %}AutoServis CRM
         {% elif prod=='fiyat-teklifi' %}Fiyat Teklifi
@@ -1429,8 +1611,25 @@ td.col-cust{max-width:190px}
       <div class="info-row"><div class="ik">Son Geçerlilik</div><div class="iv">{{ l.expires_at[:10] }}</div></div>
       <div class="info-row"><div class="ik">Son Görülme</div><div class="iv">{{ l.last_seen[:16].replace('T',' ') if l.last_seen else 'Henüz yok' }}</div></div>
       <div class="info-row"><div class="ik">Doğrulama Sayısı</div><div class="iv">{{ l.verify_count or 0 }}</div></div>
+
+      <div class="info-section">Aktifleştirme ve Yetkili Takibi</div>
+      <div class="info-row"><div class="ik">Oluşturulma Tarihi</div><div class="iv">{{ l.issued_at[:16].replace('T',' ') if l.issued_at else '-' }}</div></div>
+      <div class="info-row"><div class="ik">Oluşturan Kullanıcı</div><div class="iv">{{ l.created_by or 'Eski kayıt / bilinmiyor' }}</div></div>
+      <div class="info-row"><div class="ik">Aktifleştirme Tarihi</div><div class="iv">{{ l.activated_at[:16].replace('T',' ') if l.activated_at else 'Eski kayıt / bilinmiyor' }}</div></div>
+      <div class="info-row"><div class="ik">Aktifleştiren Kullanıcı</div><div class="iv">{{ l.activated_by or 'Eski kayıt / bilinmiyor' }}</div></div>
+      <div class="info-row"><div class="ik">Aktifleştirme IP</div><div class="iv">{{ l.activated_ip or '-' }}</div></div>
+      <div class="info-row"><div class="ik">Son Uzatma</div><div class="iv">{{ l.extended_at[:16].replace('T',' ') if l.extended_at else '-' }}</div></div>
+      <div class="info-row"><div class="ik">Uzatan Kullanıcı</div><div class="iv">{{ l.extended_by or '-' }}</div></div>
+      <div class="info-row"><div class="ik">Son Düzenleme</div><div class="iv">{{ l.updated_at[:16].replace('T',' ') if l.updated_at else '-' }}</div></div>
+      <div class="info-row"><div class="ik">Düzenleyen Kullanıcı</div><div class="iv">{{ l.updated_by or '-' }}</div></div>
+      {% if l.is_revoked %}
+      <div class="info-row"><div class="ik">İptal Tarihi</div><div class="iv">{{ l.revoked_at[:16].replace('T',' ') if l.revoked_at else '-' }}</div></div>
+      <div class="info-row"><div class="ik">İptal Eden</div><div class="iv">{{ l.revoked_by or '-' }}</div></div>
+      <div class="info-row"><div class="ik">İptal Sebebi</div><div class="iv">{{ l.revoke_reason or '-' }}</div></div>
+      {% endif %}
+
+      <div class="info-section">Notlar</div>
       <div class="info-row"><div class="ik">Not</div><div class="iv">{{ l.notes or '-' }}</div></div>
-      {% if l.is_revoked %}<div class="info-row"><div class="ik">İptal Sebebi</div><div class="iv">{{ l.revoke_reason or '-' }}</div></div>{% endif %}
     </div>
   </div>
 </div>
@@ -1493,6 +1692,14 @@ function flt(){const q=document.getElementById('srch').value.toLowerCase();docum
 function openM(id){const el=document.getElementById(id);if(el)el.classList.add('open');}
 function closeM(id){const el=document.getElementById(id);if(el)el.classList.remove('open');}
 function copyText(text){navigator.clipboard.writeText(text).then(()=>{const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);});}
+function exportLicenses(){
+  const q=document.getElementById('srch') ? document.getElementById('srch').value.trim() : '';
+  const params=new URLSearchParams();
+  params.set('product', {{ prod_filter|tojson }});
+  params.set('status',cf);
+  if(q) params.set('q',q);
+  window.location.href='/licenses/export?'+params.toString();
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'));});
 </script>
 </body></html>"""
