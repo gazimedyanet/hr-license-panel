@@ -142,6 +142,12 @@ _K_ETNFT = [
     101,109,105,50,48,50,54,71,97,122,105,77,101,100,105,97,83,
     101,99,114,101,116,75,101,121
 ]
+# Etanom Tedarik (ETNTD) — Tedarik Suite utils/license_manager.py ile AYNI olmalı
+_K_ETNTD = [
+    69,116,97,110,111,109,84,101,100,97,114,105,107,83,105,115,
+    116,101,109,105,50,48,50,54,71,97,122,105,77,101,100,105,
+    97,83,101,99,114,101,116,75,101,121
+]
 
 PRODUCTS = {
     "gazi-hr":        {"prefix":"GMHR",  "key":_K_HR,    "label":"Gazi HR",          "color":"#3b82f6","emoji":"👥"},
@@ -151,6 +157,7 @@ PRODUCTS = {
     "kkdik":          {"prefix":"KKDIK", "key":_K_KKDIK, "label":"KKDİK Suite",      "color":"#06b6d4","emoji":"⚗️"},
     "etanom-teklif":  {"prefix":"ETNTK", "key":_K_ETNTK, "label":"Etanom Teklif",   "color":"#f59e0b","emoji":"📄"},
     "etanom-fatura":  {"prefix":"ETNFT", "key":_K_ETNFT, "label":"Etanom Fatura (İhracat)", "color":"#dc2626","emoji":"🧾"},
+    "etanom-tedarik": {"prefix":"ETNTD", "key":_K_ETNTD, "label":"Etanom Tedarik",  "color":"#0284c7","emoji":"🛒"},
 }
 
 
@@ -364,6 +371,7 @@ def _sidebar_stats(conn):
         "kkdik_count":   conn.execute("SELECT COUNT(*) FROM licenses WHERE product='kkdik'").fetchone()[0],
         "etanom_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-teklif'").fetchone()[0],
         "fatura_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-fatura'").fetchone()[0],
+        "tedarik_count": conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-tedarik'").fetchone()[0],
     }
 
 
@@ -594,6 +602,7 @@ def index():
         "kkdik_count":   conn.execute("SELECT COUNT(*) FROM licenses WHERE product='kkdik'").fetchone()[0],
         "etanom_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-teklif'").fetchone()[0],
         "fatura_count":  conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-fatura'").fetchone()[0],
+        "tedarik_count": conn.execute("SELECT COUNT(*) FROM licenses WHERE product='etanom-tedarik'").fetchone()[0],
     }
     logs = conn.execute("SELECT * FROM audit_log ORDER BY created_at DESC, id DESC LIMIT 25").fetchall()
     conn.close()
@@ -819,6 +828,12 @@ def verify_etanom():
 def verify_etanom_fatura():
     d = request.get_json(silent=True) or {}
     _, result = _verify_core(d.get("license_key","").strip().upper(), d.get("hw_id","").strip(), "etanom-fatura")
+    return jsonify(result)
+
+@app.route("/api/etanom-tedarik-license", methods=["POST"])
+def verify_etanom_tedarik():
+    d = request.get_json(silent=True) or {}
+    _, result = _verify_core(d.get("license_key","").strip().upper(), d.get("hw_id","").strip(), "etanom-tedarik")
     return jsonify(result)
 
 @app.route("/health")
@@ -1223,7 +1238,7 @@ body{
   font-size:9.5px;font-weight:900;color:#fff;letter-spacing:-.02em;box-shadow:0 7px 14px rgba(0,0,0,.18);
 }
 .badge-all{background:#475467}.badge-hr{background:#2563eb}.badge-asc{background:#ea580c}.badge-ft{background:#039855}
-.badge-eta{background:#7c3aed}.badge-kkdik{background:#0891b2}.badge-etk{background:#d97706}.badge-etf{background:#dc2626}
+.badge-eta{background:#7c3aed}.badge-kkdik{background:#0891b2}.badge-etk{background:#d97706}.badge-etf{background:#dc2626}.badge-etd{background:#0284c7}
 .nav-link .cnt{
   background:rgba(255,255,255,.08);color:#cbd5e1;font-size:11px;font-weight:900;padding:3px 8px;border-radius:999px;flex-shrink:0;
 }
@@ -1397,6 +1412,7 @@ td.col-cust{max-width:190px}
       <a href="/?product=kkdik" class="nav-link {{ 'on' if prod_filter=='kkdik' else '' }}"><span class="lbl"><span class="badge badge-kkdik">KK</span>KKDİK Suite</span><span class="cnt">{{ stats.kkdik_count }}</span></a>
       <a href="/?product=etanom-teklif" class="nav-link {{ 'on' if prod_filter=='etanom-teklif' else '' }}"><span class="lbl"><span class="badge badge-etk">ET</span>Etanom Teklif</span><span class="cnt">{{ stats.etanom_count }}</span></a>
       <a href="/?product=etanom-fatura" class="nav-link {{ 'on' if prod_filter=='etanom-fatura' else '' }}"><span class="lbl"><span class="badge badge-etf">EF</span>Etanom Fatura</span><span class="cnt">{{ stats.fatura_count }}</span></a>
+      <a href="/?product=etanom-tedarik" class="nav-link {{ 'on' if prod_filter=='etanom-tedarik' else '' }}"><span class="lbl"><span class="badge badge-etd">ED</span>Etanom Tedarik</span><span class="cnt">{{ stats.tedarik_count }}</span></a>
     </div>
     <div class="side-section">
       <div class="side-label">Yönetim</div>
@@ -1535,6 +1551,7 @@ td.col-cust{max-width:190px}
               <option value="kkdik" {{ 'selected' if prod_filter=='kkdik' else '' }}>KKDİK Suite</option>
               <option value="etanom-teklif" {{ 'selected' if prod_filter=='etanom-teklif' else '' }}>Etanom Teklif</option>
               <option value="etanom-fatura" {{ 'selected' if prod_filter=='etanom-fatura' else '' }}>Etanom Fatura (İhracat)</option>
+              <option value="etanom-tedarik" {{ 'selected' if prod_filter=='etanom-tedarik' else '' }}>Etanom Tedarik</option>
             </select>
           </div>
           <div>
@@ -1600,6 +1617,7 @@ td.col-cust{max-width:190px}
         {% elif prod=='kkdik' %}KKDİK Suite
         {% elif prod=='etanom-teklif' %}Etanom Teklif
         {% elif prod=='etanom-fatura' %}Etanom Fatura (İhracat)
+        {% elif prod=='etanom-tedarik' %}Etanom Tedarik
         {% else %}Gazi HR{% endif %}
       </div></div>
       <div class="info-row"><div class="ik">Müşteri / Firma</div><div class="iv">{{ l.customer_name or '-' }}</div></div>
@@ -1716,7 +1734,7 @@ AUDIT_HTML = """<!DOCTYPE html>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{overflow-x:hidden;width:100%}
 :root{--bg:#f5f7fb;--card:#ffffff;--line:#e5e7eb;--line2:#cbd5e1;--text:#111827;--muted:#64748b;--muted2:#94a3b8;--nav:#0f172a;--nav2:#111c33;--nav-line:#233150;--accent:#2563eb;--accent-d:#1d4ed8;--accent-bg:#eff6ff;--green:#15803d;--green-bg:#ecfdf5;--amber:#b45309;--amber-bg:#fffbeb;--red:#b91c1c;--red-bg:#fef2f2;--radius:14px;--sidebar-w:268px}
-body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Roboto',Arial,sans-serif;-webkit-font-smoothing:antialiased}.shell{display:flex;min-height:100vh;min-width:0}.sidebar{width:var(--sidebar-w);flex-shrink:0;background:linear-gradient(180deg,var(--nav),var(--nav2));border-right:1px solid var(--nav-line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}.side-brand{display:flex;align-items:center;gap:12px;padding:22px 18px 18px}.side-brand .b{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#60a5fa,#2563eb);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff}.side-brand h1{font-size:14px;font-weight:900;color:#fff}.side-brand small{display:block;color:#93a4bd;font-size:11px;margin-top:2px}.side-section{padding:8px 12px 4px}.side-label{font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;color:#74849d;padding:12px 12px 8px}.nav-link{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#dbeafe;text-decoration:none;font-size:12.5px;font-weight:700;padding:9px 10px;border-radius:10px;margin-bottom:3px;transition:background .12s,color .12s}.nav-link:hover{background:rgba(255,255,255,.07)}.nav-link.on{background:#fff;color:#1e3a8a}.nav-link .lbl{display:flex;align-items:center;gap:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.badge{min-width:24px;height:22px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff}.badge-all{background:#475569}.badge-hr{background:#2563eb}.badge-asc{background:#ea580c}.badge-ft{background:#16a34a}.badge-eta{background:#7c3aed}.badge-kkdik{background:#0891b2}.badge-etk{background:#d97706}.badge-etf{background:#dc2626}.nav-link .cnt{background:rgba(255,255,255,.10);color:#cbd5e1;font-size:10px;font-weight:900;padding:2px 7px;border-radius:999px}.nav-link.on .cnt{background:#dbeafe;color:#1d4ed8}.side-spacer{flex:1}.side-foot{padding:12px;border-top:1px solid var(--nav-line)}.side-foot a{display:flex;align-items:center;gap:8px;color:#dbeafe;text-decoration:none;font-size:12.5px;font-weight:700;padding:9px 10px;border-radius:10px}.side-foot a:hover{background:rgba(255,255,255,.07)}.main{flex:1;min-width:0;padding:28px 32px 42px;max-width:100%}.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:0 10px 30px rgba(15,23,42,.04)}.topbar h2{font-size:24px;font-weight:900;letter-spacing:-.03em;margin-bottom:7px}.topbar p{color:var(--muted);font-size:13.5px;max-width:720px;line-height:1.55}.btn{border:none;border-radius:10px;padding:10px 15px;font-size:13px;font-weight:900;cursor:pointer;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:filter .12s,transform .12s;white-space:nowrap}.btn:hover{filter:brightness(.95)}.btn:active{transform:translateY(1px)}.btn-main{background:var(--accent)}.btn-muted{background:#475569}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px 18px;min-width:0;box-shadow:0 10px 30px rgba(15,23,42,.035)}.stat .k{color:var(--muted);font-size:11px;margin-bottom:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.stat .v{font-size:28px;font-weight:900;letter-spacing:-.03em}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-width:0;box-shadow:0 10px 30px rgba(15,23,42,.04)}.card-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}.card-head h3{font-size:15px;font-weight:900}.note{font-size:12px;color:var(--muted)}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);align-items:end}label{display:block;font-size:11.5px;font-weight:900;color:#334155;margin-bottom:6px}input,select{width:100%;background:#fff;border:1.5px solid #cbd5e1;color:var(--text);border-radius:10px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(37,99,235,.12)}.table-wrap{overflow-x:auto;max-width:100%}table{width:100%;border-collapse:collapse;table-layout:auto}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:top}th{color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:900;background:#f8fafc;white-space:nowrap}tbody tr:hover td{background:#f8fafc}.mono{font-family:'Roboto Mono',ui-monospace,Consolas,monospace;font-size:11px}.detail{max-width:420px;line-height:1.45;color:#334155}.path{max-width:220px;word-break:break-word;color:#475569}.ua{max-width:280px;word-break:break-word;color:#64748b;font-size:11px}.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}.pill::before{content:"";width:6px;height:6px;border-radius:50%;flex-shrink:0}.p-green{background:var(--green-bg);color:var(--green)}.p-green::before{background:var(--green)}.p-amber{background:var(--amber-bg);color:var(--amber)}.p-amber::before{background:var(--amber)}.p-red{background:var(--red-bg);color:var(--red)}.p-red::before{background:var(--red)}.p-blue{background:var(--accent-bg);color:var(--accent-d)}.p-blue::before{background:var(--accent)}.pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:16px 20px}.pagination .page-text{font-size:12.5px;color:var(--muted);font-weight:700}.pagination .pager{display:flex;gap:8px}.empty{padding:36px;color:var(--muted);text-align:center}@media(max-width:1180px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.filters{grid-template-columns:1fr 1fr}}@media(max-width:980px){.sidebar{display:none}.main{padding:20px}}@media(max-width:700px){.main{padding:14px}.stats{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.topbar{padding:18px}.btn{width:100%}.topbar>div:last-child{width:100%}}
+body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Roboto',Arial,sans-serif;-webkit-font-smoothing:antialiased}.shell{display:flex;min-height:100vh;min-width:0}.sidebar{width:var(--sidebar-w);flex-shrink:0;background:linear-gradient(180deg,var(--nav),var(--nav2));border-right:1px solid var(--nav-line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}.side-brand{display:flex;align-items:center;gap:12px;padding:22px 18px 18px}.side-brand .b{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#60a5fa,#2563eb);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff}.side-brand h1{font-size:14px;font-weight:900;color:#fff}.side-brand small{display:block;color:#93a4bd;font-size:11px;margin-top:2px}.side-section{padding:8px 12px 4px}.side-label{font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;color:#74849d;padding:12px 12px 8px}.nav-link{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#dbeafe;text-decoration:none;font-size:12.5px;font-weight:700;padding:9px 10px;border-radius:10px;margin-bottom:3px;transition:background .12s,color .12s}.nav-link:hover{background:rgba(255,255,255,.07)}.nav-link.on{background:#fff;color:#1e3a8a}.nav-link .lbl{display:flex;align-items:center;gap:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.badge{min-width:24px;height:22px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff}.badge-all{background:#475569}.badge-hr{background:#2563eb}.badge-asc{background:#ea580c}.badge-ft{background:#16a34a}.badge-eta{background:#7c3aed}.badge-kkdik{background:#0891b2}.badge-etk{background:#d97706}.badge-etf{background:#dc2626}.badge-etd{background:#0284c7}.nav-link .cnt{background:rgba(255,255,255,.10);color:#cbd5e1;font-size:10px;font-weight:900;padding:2px 7px;border-radius:999px}.nav-link.on .cnt{background:#dbeafe;color:#1d4ed8}.side-spacer{flex:1}.side-foot{padding:12px;border-top:1px solid var(--nav-line)}.side-foot a{display:flex;align-items:center;gap:8px;color:#dbeafe;text-decoration:none;font-size:12.5px;font-weight:700;padding:9px 10px;border-radius:10px}.side-foot a:hover{background:rgba(255,255,255,.07)}.main{flex:1;min-width:0;padding:28px 32px 42px;max-width:100%}.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:0 10px 30px rgba(15,23,42,.04)}.topbar h2{font-size:24px;font-weight:900;letter-spacing:-.03em;margin-bottom:7px}.topbar p{color:var(--muted);font-size:13.5px;max-width:720px;line-height:1.55}.btn{border:none;border-radius:10px;padding:10px 15px;font-size:13px;font-weight:900;cursor:pointer;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:filter .12s,transform .12s;white-space:nowrap}.btn:hover{filter:brightness(.95)}.btn:active{transform:translateY(1px)}.btn-main{background:var(--accent)}.btn-muted{background:#475569}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px 18px;min-width:0;box-shadow:0 10px 30px rgba(15,23,42,.035)}.stat .k{color:var(--muted);font-size:11px;margin-bottom:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.stat .v{font-size:28px;font-weight:900;letter-spacing:-.03em}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-width:0;box-shadow:0 10px 30px rgba(15,23,42,.04)}.card-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}.card-head h3{font-size:15px;font-weight:900}.note{font-size:12px;color:var(--muted)}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);align-items:end}label{display:block;font-size:11.5px;font-weight:900;color:#334155;margin-bottom:6px}input,select{width:100%;background:#fff;border:1.5px solid #cbd5e1;color:var(--text);border-radius:10px;padding:10px 12px;font-size:13px;outline:none;font-family:inherit}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(37,99,235,.12)}.table-wrap{overflow-x:auto;max-width:100%}table{width:100%;border-collapse:collapse;table-layout:auto}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:top}th{color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:900;background:#f8fafc;white-space:nowrap}tbody tr:hover td{background:#f8fafc}.mono{font-family:'Roboto Mono',ui-monospace,Consolas,monospace;font-size:11px}.detail{max-width:420px;line-height:1.45;color:#334155}.path{max-width:220px;word-break:break-word;color:#475569}.ua{max-width:280px;word-break:break-word;color:#64748b;font-size:11px}.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}.pill::before{content:"";width:6px;height:6px;border-radius:50%;flex-shrink:0}.p-green{background:var(--green-bg);color:var(--green)}.p-green::before{background:var(--green)}.p-amber{background:var(--amber-bg);color:var(--amber)}.p-amber::before{background:var(--amber)}.p-red{background:var(--red-bg);color:var(--red)}.p-red::before{background:var(--red)}.p-blue{background:var(--accent-bg);color:var(--accent-d)}.p-blue::before{background:var(--accent)}.pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:16px 20px}.pagination .page-text{font-size:12.5px;color:var(--muted);font-weight:700}.pagination .pager{display:flex;gap:8px}.empty{padding:36px;color:var(--muted);text-align:center}@media(max-width:1180px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.filters{grid-template-columns:1fr 1fr}}@media(max-width:980px){.sidebar{display:none}.main{padding:20px}}@media(max-width:700px){.main{padding:14px}.stats{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.topbar{padding:18px}.btn{width:100%}.topbar>div:last-child{width:100%}}
 </style></head>
 <body>
 <div class="shell">
@@ -1732,6 +1750,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;font-family:'Roboto
       <a href="/?product=kkdik" class="nav-link"><span class="lbl"><span class="badge badge-kkdik">KK</span>KKDİK Suite</span><span class="cnt">{{ stats.kkdik_count }}</span></a>
       <a href="/?product=etanom-teklif" class="nav-link"><span class="lbl"><span class="badge badge-etk">ET</span>Etanom Teklif</span><span class="cnt">{{ stats.etanom_count }}</span></a>
       <a href="/?product=etanom-fatura" class="nav-link"><span class="lbl"><span class="badge badge-etf">EF</span>Etanom Fatura</span><span class="cnt">{{ stats.fatura_count }}</span></a>
+      <a href="/?product=etanom-tedarik" class="nav-link"><span class="lbl"><span class="badge badge-etd">ED</span>Etanom Tedarik</span><span class="cnt">{{ stats.tedarik_count }}</span></a>
     </div>
     <div class="side-section">
       <div class="side-label">Yönetim</div>
