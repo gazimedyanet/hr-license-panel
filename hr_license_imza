@@ -1,0 +1,63 @@
+# -*- coding: utf-8 -*-
+"""
+Gazi HR lisans cevabı imzalama eki — ortak panelde YALNIZCA /api/hr-license cevabını etkiler.
+Diğer ürünlerin endpoint'leri, anahtar üretimi (gen_key), ekranlar ve veritabanı DEĞİŞMEZ.
+
+KURULUM
+ 1) Bu dosyayı app.py'nin yanına koyun. requirements.txt'e  cryptography  ekleyin.
+ 2) Railway > Variables:  LICENSE_PRIVATE_KEY = <lisans_anahtar_uret.py'nin bastığı özel anahtar>
+                          (isteğe bağlı) LEASE_DAYS = 7
+ 3) app.py'de  verify_hr()  fonksiyonunu şununla değiştirin (başka hiçbir yer değişmez):
+
+    from hr_license_imza import hr_sign
+
+    @app.route("/api/hr-license", methods=["POST"])
+    def verify_hr():
+        d = request.get_json(silent=True) or {}
+        key = str(d.get("license_key","")).strip().upper()[:64]
+        hw  = str(d.get("hw_id","")).strip()[:64]
+        lic, result = _verify_core(key, hw, "gazi-hr")
+        return jsonify(hr_sign(result, lic, key, hw, str(d.get("nonce",""))[:64]))
+
+Cevaptaki eski alanlar (valid, expires, customer, message, package, days_left) aynen korunur;
+ek olarak imzalı "token" alanı eklenir. nonce göndermeyen eski istemciler de çalışmaya devam eder.
+"""
+import base64
+import json
+import os
+from datetime import datetime, timedelta, timezone
+
+
+def _priv():
+    raw = os.environ.get("LICENSE_PRIVATE_KEY", "").strip()
+    if not raw:
+        return None
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    return Ed25519PrivateKey.from_private_bytes(base64.b64decode(raw))
+
+
+def _b64u(b: bytes) -> str:
+    return base64.urlsafe_b64encode(b).decode().rstrip("=")
+
+
+def hr_sign(result: dict, lic, key: str, hw: str, nonce: str) -> dict:
+    """result/lic = _verify_core çıktısı. Geçerliyse status=ok, değilse status=invalid (imzalı)."""
+    out = dict(result)
+    k = _priv()
+    if k is None or not nonce:
+        return out                      # özel anahtar yoksa / eski istemci: sadece eski alanlar
+    now = datetime.now(timezone.utc)
+    ok = bool(result.get("valid")) and lic is not None
+    payload = {
+        "v": 2, "product": "gazi-hr", "status": "ok" if ok else "invalid",
+        "message": result.get("message", ""), "license_key": key, "hw_id": hw, "nonce": nonce,
+        "issued_at": now.isoformat(),
+        "lease_until": (now + timedelta(days=int(os.environ.get("LEASE_DAYS", "7")))).isoformat(),
+    }
+    if ok:
+        exp = datetime.fromisoformat(lic["expires_at"])
+        payload.update({"package": lic["package"] or "enterprise", "expires": exp.date().isoformat(),
+                        "customer": lic["customer_name"] or ""})
+    body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+    out["token"] = _b64u(body) + "." + _b64u(k.sign(body))
+    return out
